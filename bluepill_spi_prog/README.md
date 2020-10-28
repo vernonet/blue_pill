@@ -23,6 +23,9 @@ Hardware full-duplex SPI with DMA, multiple clock speeds available (SPI1) :
 Pins are used to connect the chip to the board:
 .......
 
+![Иллюстрация к проекту](https://github.com/vernonet/blue_pill/edit/master/bluepill_spi_prog/schematic_diagram.jpg)
+
+
 To display debug information set in file "usbd_conf.h" :
  - USBD_DEBUG_LEVEL             1
  - SPI_DEBUG_LEVEL              1
