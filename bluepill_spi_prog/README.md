@@ -5,8 +5,10 @@ Created using Cube MX and Keil, also used source code <a href="https://github.co
 
 # Features
 
-Hardware full-duplex SPI with DMA, multiple clock speeds available (SPI2), selected by pressing the button(one blink - 1313KHz....five blinks - 21000KHz)  :
+Hardware full-duplex SPI with DMA, multiple clock speeds available (SPI1) :
 
+  - 2250  KHz
+  - 4500  KHz
   - 9000  KHz
   - 18000 KHz
 
@@ -19,7 +21,7 @@ Hardware full-duplex SPI with DMA, multiple clock speeds available (SPI2), selec
 
 
 Pins are used to connect the chip to the board:
-
+.......
 
 To display debug information set in file "usbd_conf.h" :
  - USBD_DEBUG_LEVEL             1
