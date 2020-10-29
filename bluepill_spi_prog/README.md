@@ -21,7 +21,10 @@ Hardware full-duplex SPI with DMA, multiple clock speeds available (SPI1) :
 
 
 Pins are used to connect the chip to the board:
-.......
+ - SPI2_MISO Pin - PA6
+ - SPI2_MOSI Pin - PA7
+ - SPI2_SCK  Pin - PA5
+ - SPI2_NSS  Pin - PA4
 
 ![Schematic diagram](https://github.com/vernonet/blue_pill/edit/master/bluepill_spi_prog/schematic_diagram.jpg)
 
