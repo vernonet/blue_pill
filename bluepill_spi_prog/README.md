@@ -19,13 +19,13 @@ Hardware full-duplex SPI with DMA, multiple clock speeds available (SPI1) :
 
     Any other chips need to be added to files "flashchips.c", "chip_drv.c", "spi.c".
 
-
 Pins are used to connect the chip to the board:
  - SPI2_MISO Pin - PA6
  - SPI2_MOSI Pin - PA7
  - SPI2_SCK  Pin - PA5
  - SPI2_NSS  Pin - PA4
-
+ 
+ This can be changed in the file "RTE_Device.h".
 ![Schematic diagram](https://github.com/vernonet/blue_pill/edit/master/bluepill_spi_prog/schematic_diagram.jpg)
 
 
