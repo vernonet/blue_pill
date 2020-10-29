@@ -46,14 +46,13 @@
   */
 
 /* Includes ------------------------------------------------------------------ */
+#include "RTE_Device.h"
 #include "ff.h"
 #include "usbd_storage.h"
 #include "usb_device.h"
 #include "flashchips.h"
 #include "chip_drv.h"
 #include "spi.h"
-//#include "stm32f4_discovery.h"
-//#include "ff.h"
 #include "Driver_SPI.h"
 
 
@@ -167,7 +166,7 @@ DWORD get_fattime (void)
 					;
 }
 
-int8_t create_fs(void) {   //create fat for backup  flash
+int8_t create_fs(const char * fil_str) {   //create fat for backup  flash
 	uint8_t i=0;
 	uint16_t clusters ;
 	FAT12_FAT_TABLE * tbl	= (FAT12_FAT_TABLE*)&FAT[0x200+3];	
@@ -199,10 +198,9 @@ int8_t create_fs(void) {   //create fat for backup  flash
     // I use FatFS for long filename 
     fs = (FATFS *)malloc(sizeof(FATFS));
 		FIL fil;
-//    uint32_t bw;
 		char sd_path[4] = "0:/";
     char filename[43] = {0};  
-    memcpy (filename, flschip->name, strlen(flschip->name));
+    memcpy (filename, fil_str, strlen(fil_str));
 	while (strchr (filename, '/') != NULL) {               //replace '/' on '_'
 			*strchr (filename, '/') = '_';
 		}
@@ -215,17 +213,17 @@ int8_t create_fs(void) {   //create fat for backup  flash
 	  strcat (filename, ".bin");
 		check = f_mount(fs, sd_path, 0);
 		check = f_open(&fil, filename, FA_CREATE_ALWAYS);			
-	  memcpy(&FAT[0]+STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK ,fs->win, 0xF0);
+	  memcpy(&FAT[0]+STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK ,fs->win, 0xC0);    //0xC0  - that should be enough
 		//check = f_write(&fil, "123456", 6, &bw);	
 		check = f_close(&fil);		
 		check = f_mount(NULL, sd_path, 0);
 		free(fs);
 		if (check) return -1;
-    uint8_t * buf_temp = &FAT[STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK + 0x18 + 0xA0];
-							 while(*(uint32_t*)buf_temp == 0) {                        //find position for file size
-								 buf_temp = buf_temp - 0x20;
-							 }
-		*(uint32_t*)(buf_temp+4) = 	flschip->total_size*1024;				//set  file size 
+    uint8_t * buf_temp = &FAT[STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK + 0x18 + 0xA0];  
+		while(*(uint32_t*)buf_temp == 0) {                        //find position for file size
+			buf_temp = buf_temp - 0x20;
+			}
+		*(uint32_t*)(buf_temp+4) = 	flschip->total_size*1024;				         //set  file size 
 		*(uint32_t*)(buf_temp)   =  *(uint32_t*)(buf_temp) + 0x00020000; 					 
 							 
 		
@@ -361,7 +359,7 @@ int8_t Sector_Erase(void)
 	return 0;
 }
 
- int8_t Prepare_FAT(void)
+ int8_t Prepare_FAT(const char * fil_str)
 {
 	int8_t ret=0;
 	
@@ -375,7 +373,7 @@ int8_t Sector_Erase(void)
 	
 	  if (backup_mode){ 
 			memcpy(&FAT[0]+STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK+4, "BACKUP", 6);		
-			if (create_fs()) return -1; 
+			if (create_fs(fil_str)) return -1; 
 			//fatfs вешает spi
 #ifdef USE_LFN				
 //			Initialize(NULL);	

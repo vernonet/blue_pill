@@ -61,6 +61,20 @@
 // </h>
 
 
+#ifndef DRIVER_SPI_BUS_SPEED
+//   <h> SPI_BUS_SPEED
+//   <o> Hz <18000000=>18000000 <9000000=>9000000 <4500000=>4500000 <2150000=>2150000
+#define DRIVER_SPI_BUS_SPEED             9000000
+//   </h>
+#endif
+
+#ifndef USE_LFN
+//   <c> Long file names support
+#define USE_LFN        
+//   </c>
+#endif
+
+
 // <e> USART1 (Universal synchronous asynchronous receiver transmitter)
 // <i> Configuration settings for Driver_USART1 in component ::CMSIS Driver:USART
 #define RTE_USART1                       0

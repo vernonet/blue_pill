@@ -65,7 +65,6 @@ SPI_HandleTypeDef hspi1;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 uint8_t status, st;
-uint8_t buff[4096];
 __IO uint32_t CRCValue_actual =  0;  //calculated after write flash
 __IO uint32_t CRCValue_nominal = 0;  //calculated before write flash
 uint8_t crc_buf[0x200] __attribute__ ((aligned (4)));
@@ -82,7 +81,6 @@ extern const struct flashchip flashchips[];
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-//static void MX_SPI1_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -123,73 +121,61 @@ int main(void)
 	
 	if (Initialize(NULL) == ARM_DRIVER_OK) {     //init SPI 
 		 PowerControl(ARM_POWER_FULL);
-		 if (flschip) {
-		 MX_GPIO_Init();    
-		 //boot_sec[20] = (flschip->total_size*1024/STORAGE_BLK_SIZ) >> 8;              //NumberOfSectors16
+		 MX_GPIO_Init();
+		 if (flschip) {   
+		 //boot_sec[20] = (flschip->total_size*1024/STORAGE_BLK_SIZ) >> 8;                       //NumberOfSectors16
 		 boot_sec[32] = ((flschip->total_size*1024/STORAGE_BLK_SIZ) & 0xFF) + FAT_FILE_DATA_BLK; //NumberOfSectors32 
-		 boot_sec[33] = ((flschip->total_size*1024/STORAGE_BLK_SIZ) >>  8) & 0xFF;      //NumberOfSectors32
-     boot_sec[34] = ((flschip->total_size*1024/STORAGE_BLK_SIZ) >> 16) & 0xFF;	    //NumberOfSectors32		 
-		 while (1){
-			if (blink-- == 0) {LED_Toggle(); blink = 40;}
-		  HAL_Delay(10);
-			if (PB_GetState() == 0) {LED_Off(); break; }
-		  }			
-		 }	 
-		 else {                                          //flash not identified   
-			   MX_GPIO_Init();
-			   HAL_Delay(800);
-			   flschip = flash_id_to_entry(GENERIC_MANUF_ID, GENERIC_DEVICE_ID);
-			   backup_mode = true;
-			   Prepare_FAT();
-			   HAL_Delay(50); 	
-				 MX_USB_DEVICE_Init();
-		     HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); //USB DP PULLUP
-			   Error_Handler();         
-		 }
-	}
-	
-  if (flschip) {                    //flash identified
-				//LED_Off();
-				HAL_Delay(800);
-				//Wr_Protect = 0;            //allow write
-		    backup_mode = true;
-				if (Prepare_FAT()) Error_Handler();		  //backup mode
-        //create_fs();  
-				/* USER CODE END SysInit */
+		 boot_sec[33] = ((flschip->total_size*1024/STORAGE_BLK_SIZ) >>  8) & 0xFF;               //NumberOfSectors32
+     boot_sec[34] = ((flschip->total_size*1024/STORAGE_BLK_SIZ) >> 16) & 0xFF;	             //NumberOfSectors32		 
+//		 while (1){
+//			if (blink-- == 0) {LED_Toggle(); blink = 40;}
+//		  HAL_Delay(10);
+//			if (PB_GetState() == 0) {LED_Off(); break; }
+//		  }
 
-				/* Initialize all configured peripherals */
-				//MX_GPIO_Init();
-		    HAL_Delay(50); 	
-				MX_USB_DEVICE_Init();
-		    HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); //USB DP PULLUP
-				/* USER CODE BEGIN 2 */
-		    while (1){
-					if (blink-- == 0) {LED_Toggle(); blink = 40;}
-					HAL_Delay(10);
-					if (PB_GetState() == 0) {LED_Off(); break; }
-			  }
-        
-				HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_RESET); //USB DP PULLDOWN
-        MX_USB_DEVICE_DeInit();
-				backup_mode = false;
-				HAL_Delay(100);
-			  if (EraseChip()) {              
-		        Error_Handler();                //flash not erased
-		    }
-				LED_Off();
-        HAL_Delay(100);
-				if (Prepare_FAT()) Error_Handler();  //update mode
-        MX_USB_DEVICE_Init();	
-        HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET);        //USB DP PULLUP				
-				/* USER CODE END 2 */
+			HAL_Delay(800);
+			backup_mode = true;
+			if (Prepare_FAT(flschip->name)) Error_Handler();		  //backup mode
+			/* USER CODE END SysInit */
 
-				/* Infinite loop */
-				/* USER CODE BEGIN WHILE */
-				while (1)
-				{
+			/* Initialize all configured peripherals */
+			HAL_Delay(50); 	
+			MX_USB_DEVICE_Init();
+			HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); //USB DP PULLUP
+			/* USER CODE BEGIN 2 */
+			while (1){
+				if (blink-- == 0) {LED_Toggle(); blink = 40;}
+				HAL_Delay(10);
+				if (PB_GetState() == 0) {LED_Off(); break; }
+			}
+			
+			HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_RESET); //USB DP PULLDOWN
+			MX_USB_DEVICE_DeInit();
+			backup_mode = false;
+			HAL_Delay(100);
+			if (EraseChip()) { 
+           //flash not erased
+           backup_mode = true;
+					 Prepare_FAT("Chip erase error");
+					 HAL_Delay(50); 	
+					 MX_USB_DEVICE_Init();
+					 HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); //USB DP PULLUP				
+					 Error_Handler();                
+			}
+			LED_Off();
+			HAL_Delay(100);
+			if (Prepare_FAT(NULL)) Error_Handler();  //update mode
+			MX_USB_DEVICE_Init();	
+			HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET);        //USB DP PULLUP				
+			/* USER CODE END 2 */
 
-				/* USER CODE END WHILE */
-        if (complet)                       // if firmware update complet
+			/* Infinite loop */
+			/* USER CODE BEGIN WHILE */
+			while (1)
+			{
+
+			/* USER CODE END WHILE */
+			if (complet)                       // if firmware update complet
 					{ 
 						HAL_Delay(10);
 						HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_RESET); //USB DP PULLDOWN
@@ -204,7 +190,13 @@ int main(void)
 							adr += len;
 						}
 						if (!(CRCValue_nominal == CRCValue_actual) || (error)){
-							Error_Handler();        //error CRC or any other error
+							 //error CRC or any other error
+							 backup_mode = true;
+							 Prepare_FAT("CRC error after programming");
+							 HAL_Delay(50); 	
+							 MX_USB_DEVICE_Init();
+							 HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); //USB DP PULLUP
+							 Error_Handler();        
 						}
 						else {
 							while(1){
@@ -213,13 +205,23 @@ int main(void)
 							}
 						}
 					}
-						else Error_Handler();    //file size error
-//				while(1){}			
-								
+						else Error_Handler();    //file size error								
 				}		
-			}
+			}			
+		 }	 
+		 else {                                          //flash not identified  or wrong connection 
+			   HAL_Delay(800);
+			   flschip = flash_id_to_entry(GENERIC_MANUF_ID, GENERIC_DEVICE_ID);
+			   backup_mode = true;
+			   Prepare_FAT(flschip->name);
+			   HAL_Delay(50); 	
+				 MX_USB_DEVICE_Init();
+		     HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); //USB DP PULLUP
+			   Error_Handler();         
+		 }
+	}
 	
-}
+  
 	else   Error_Handler();             //flash not identified
 		  
 	 
@@ -355,11 +357,9 @@ void _Error_Handler(char *file, int line)
   while(1)
   {
 	SPI_UsrLog("\n\r ERROR -> %s %d", file, line);
-	//complet = 1;                                         
-	//error = 1;
   while(1){
 			LED_Toggle();   
-			HAL_Delay(100);
+			HAL_Delay(80);
 	}
   }
   /* USER CODE END Error_Handler_Debug */
