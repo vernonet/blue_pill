@@ -465,7 +465,7 @@ static ARM_FLASH_CAPABILITIES GetCapabilities (void) {
   int32_t  status;
 
 	 
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);                //indicate reading
+	LED_On();                //indicate reading
 	 
   if ((addr > (FLASH_SECTOR_COUNT * FLASH_SECTOR_SIZE)) || (data == NULL)) {
     return ARM_DRIVER_ERROR_PARAMETER;
@@ -506,7 +506,7 @@ static ARM_FLASH_CAPABILITIES GetCapabilities (void) {
 	
 	//if (addr == 0x3000) memcpy(((uint8_t *)data) , lbl, sizeof lbl);
 
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);                 //indicate reading
+	LED_Off();                 //indicate reading
 	
   return (status);
 }
@@ -526,7 +526,7 @@ int32_t ProgramData (uint32_t addr, const void *data, uint32_t cnt) {
         uint32_t num, n;
 	      uint8_t bytes=0;
 
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);                 //indicate writing
+	LED_On();                 //indicate writing
 	
   if ((addr > (FLASH_SECTOR_COUNT*FLASH_SECTOR_SIZE)) || (data == NULL)) {
     return ARM_DRIVER_ERROR_PARAMETER;
@@ -614,7 +614,7 @@ int32_t ProgramData (uint32_t addr, const void *data, uint32_t cnt) {
     status = (int32_t)num;
   }
 
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);            //indicate writing
+	LED_Off();            //indicate writing
 	
   return status;
 }

@@ -1,17 +1,23 @@
 
 //*** <<< Use Configuration Wizard in Context Menu >>> ***
-//   <o> SPI Flash <0=>W25X80  <1=>W25Q64
-#define TYPE_SPI 0
+//   <o> SPI Flash <0=>W25X80  <1=>W25Q64 <2=>W25Q80
+#define TYPE_SPI 2
+//
+#ifndef DRIVER_SPI_BUS_SPEED
+//   <o> SPI_BUS_SPEED <18000000=>18000000 <9000000=>9000000 <4500000=>4500000 <2150000=>2150000
+#define DRIVER_SPI_BUS_SPEED             9000000
+#endif
 //*** <<< end of configuration section >>>    ***
+
 
 #if TYPE_SPI == 0	
   #define FLASH_SECTOR_COUNT      ((uint32_t)256)    /* Number of sectors */
-#else
-  #if TYPE_SPI == 1
+#elif TYPE_SPI == 1
    #define FLASH_SECTOR_COUNT      ((uint32_t)256*8)    /* Number of sectors */
-	#else  
-	 #define FLASH_SECTOR_COUNT      ((uint32_t)256)    /* Number of sectors */
-	#endif 
+#elif TYPE_SPI == 2
+	 #define FLASH_SECTOR_COUNT      ((uint32_t)256)    /* Number of sectors */ 
+#else  
+	 #define FLASH_SECTOR_COUNT      ((uint32_t)256)    /* Number of sectors */ 	 
 #endif	
 
 #define FLASH_SECTOR_SIZE       ((uint32_t)0x1000)   /* Sector size: 4kB */

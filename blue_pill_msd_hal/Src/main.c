@@ -110,20 +110,20 @@ int main(void)
   if (Initialize(NULL) == ARM_DRIVER_OK) {        //init SPI1 
 		 int32_t stat = PowerControl(ARM_POWER_FULL);
 		 if (stat) {
-			 while(1){}; //error
+			 Error_Handler();
 		 }
 		 
 		 ReadJedecId (CMD_READ_RDID, &jdc_id_) ; 
-#if TYPE_SPI == 0	
+#if TYPE_SPI == 0	 
 		 if ((jdc_id_.dev_id !=  WINBOND_NEX_W25X80) || (jdc_id_.man_id != WINBOND_NEX_ID)) {
-#else 
-	#if TYPE_SPI == 1	
+#elif TYPE_SPI == 1
 		if ((jdc_id_.dev_id !=  WINBOND_NEX_W25Q64_V) || (jdc_id_.man_id != WINBOND_NEX_ID)) { 
-	#else 
+#elif TYPE_SPI == 2
+		if ((jdc_id_.dev_id !=  WINBOND_NEX_W25Q80_V) || (jdc_id_.man_id != WINBOND_NEX_ID)) { 	
+#else			
     if (0)	{		 
-  #endif			 
 #endif			 
-			  while(1){};  //error
+		  Error_Handler();
 		 }
 		 
 		 //writing a disk label if it is missing
@@ -157,7 +157,7 @@ int main(void)
 	HAL_Delay(50); 	
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET); //USB DP PULLUP
+  HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN,  GPIO_PIN_SET); //USB DP PULLUP
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -254,11 +254,18 @@ static void MX_GPIO_Init(void)
 	__HAL_RCC_GPIOC_CLK_ENABLE();
 	
 	 /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);    //LED indicate reading writing
+  LED_Off();    //LED indicate reading writing
 
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);   //USB DP PULLDOWN
+  HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_RESET);   //USB DP PULLDOWN
+
+  /*Configure GPIO pin : USB_DP */                           
+  GPIO_InitStruct.Pin  = USB_DP_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+  HAL_GPIO_Init(USB_DP_PORT, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB14 */
   GPIO_InitStruct.Pin = GPIO_PIN_14;
@@ -292,6 +299,8 @@ void _Error_Handler(char *file, int line)
   /* User can add his own implementation to report the HAL error return state */
   while(1)
   {
+		LED_Toggle();   
+		HAL_Delay(80);
   }
   /* USER CODE END Error_Handler_Debug */
 }
