@@ -122,7 +122,8 @@ int main(void)
 		if ((jdc_id_.dev_id !=  WINBOND_NEX_W25Q80_V) || (jdc_id_.man_id != WINBOND_NEX_ID)) { 	
 #else			
     if (0)	{		 
-#endif			 
+#endif		
+	          MX_GPIO_Init();	
 		  Error_Handler();
 		 }
 		 
