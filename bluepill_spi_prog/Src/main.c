@@ -50,6 +50,7 @@
 #include "main.h"
 #include "stm32f1xx_hal.h"
 #include "usb_device.h"
+#include "button.h"
 
 /* USER CODE BEGIN Includes */
 #include "usbd_storage.h"
@@ -146,7 +147,7 @@ int main(void)
 			while (1){
 				if (blink-- == 0) {LED_Toggle(); blink = 40;}
 				HAL_Delay(10);
-				if (PB_GetState() == 0) {LED_Off(); break; }
+				if (SWPressed() == 1) {LED_Off(); break; }
 			}
 			
 			HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_RESET); //USB DP PULLDOWN
@@ -175,7 +176,7 @@ int main(void)
 			{
 
 			/* USER CODE END WHILE */
-			if (complet)                       // if firmware update complet
+			if (complet)                       // if the write is completed
 					{ 
 						HAL_Delay(10);
 						HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_RESET); //USB DP PULLDOWN
@@ -211,9 +212,9 @@ int main(void)
 		 }	 
 		 else {                                          //flash not identified  or wrong connection 
 			   HAL_Delay(800);
-			   flschip = flash_id_to_entry(GENERIC_MANUF_ID, GENERIC_DEVICE_ID);
+			   //flschip = flash_id_to_entry(GENERIC_MANUF_ID, GENERIC_DEVICE_ID);
 			   backup_mode = true;
-			   Prepare_FAT(flschip->name);
+			   Prepare_FAT("unknown SPI chip or wrong connections");
 			   HAL_Delay(50); 	
 				 MX_USB_DEVICE_Init();
 		     HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); //USB DP PULLUP

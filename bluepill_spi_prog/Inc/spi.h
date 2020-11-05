@@ -29,15 +29,18 @@ extern ARM_DRIVER_SPI     SPI_Driver_(DRIVER_SPI_NUM);
 #define CMD_EWSR                (0x50U)
 #define CMD_WRSR                (0x01U)
 #define CMD_READ_CONF_REG       (0x15U)
+#define CMD_READ4B_DATA         (0x13U)
+#define CMD_PAGE4B_PROGRAM      (0x12U)
+#define CMD_SECTOR4B_ERASE      (0x21U)
 
 /* Enter 4-byte Address Mode */
 #define JEDEC_ENTER_4_BYTE_ADDR_MODE	0xB7
 /* Exit 4-byte Address Mode */
-#define JEDEC_EXIT_4_BYTE_ADDR_MODE	0xE9
+#define JEDEC_EXIT_4_BYTE_ADDR_MODE	  0xE9
 /* Write Extended Address Register */
-#define JEDEC_WRITE_EXT_ADDR_REG	0xC5
+#define JEDEC_WRITE_EXT_ADDR_REG	    0xC5
 /* Read Extended Address Register */
-#define JEDEC_READ_EXT_ADDR_REG		0xC8
+#define JEDEC_READ_EXT_ADDR_REG		    0xC8
 
 void delay_mic(void);
 int32_t SendCmd (uint8_t * cmd, uint8_t bytes);

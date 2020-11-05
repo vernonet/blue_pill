@@ -433,6 +433,11 @@
               <FilePath>..\Src\usbd_storage.c</FilePath>
             </File>
             <File>
+              <FileName>button.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\button.c</FilePath>
+            </File>
+            <File>
               <FileName>RTE_Device.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\RTE\Device\STM32F103CB\RTE_Device.h</FilePath>
@@ -1057,6 +1062,11 @@
               <FileName>usbd_storage.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\usbd_storage.c</FilePath>
+            </File>
+            <File>
+              <FileName>button.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\button.c</FilePath>
             </File>
             <File>
               <FileName>RTE_Device.h</FileName>

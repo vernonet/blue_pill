@@ -127,7 +127,7 @@ const int8_t STORAGE_Inquirydata_FS[] = {/* 36 */
   
   /* LUN 0 */
   0x00,
-  0x80,
+  0x80,     //removsble bit
   0x02,
   0x02,
   (STANDARD_INQUIRY_DATA_LEN - 5),

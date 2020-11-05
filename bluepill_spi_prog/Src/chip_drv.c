@@ -506,7 +506,7 @@ int32_t Uninitialize (void) {
 		bytes = 4;
 	}
 	 else	 {
-		buf[0] = CMD_READ_DATA;
+		buf[0] = CMD_READ4B_DATA;
 		buf[1] = (uint8_t)(addr >> 24);
 		buf[2] = (uint8_t)(addr >> 16);
 		buf[3] = (uint8_t)(addr >>  8);
@@ -637,7 +637,7 @@ int32_t Uninitialize (void) {
 				bytes = 4;
 				}	
 				else	 {
-					cmd[0] = CMD_PAGE_PROGRAM;
+					cmd[0] = CMD_PAGE4B_PROGRAM;
 					cmd[1] = (uint8_t)(addr >> 24);
 					cmd[2] = (uint8_t)(addr >> 16);
 					cmd[3] = (uint8_t)(addr >>  8);
