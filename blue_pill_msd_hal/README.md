@@ -1,4 +1,5 @@
-# blue pill mass storage device on spi flash (W25X80 or W25Q64)
+# blue pill mass storage device on spi flash (W25X80, W25Q80, W25Q64, MX25L25645G)
+1 sector - 4096 byte
 
 # License
 
