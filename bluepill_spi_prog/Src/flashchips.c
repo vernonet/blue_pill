@@ -5776,12 +5776,13 @@ const struct flashchip flashchips[] = {
 	
 	{
 		.vendor		= "Sanyo",
-		.name		= "LE25FU206A",
+		.name		= "LE25FU206A/LE25U20A",
 		.bustype	= BUS_SPI,
 		.manufacture_id	= SANYO_ID,
 		.model_id	= SANYO_LE25FU206A,
 		.total_size	= 256,
 		.page_size	= 256,
+		.feature_bits	= FEATURE_WRSR_WREN,
 		.tested		= TEST_UNTESTED,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -5797,10 +5798,10 @@ const struct flashchip flashchips[] = {
 				.block_erase = SPI_BLOCK_ERASE_D8,
 			}, {
 				.eraseblocks = { {256 * 1024, 1} },
-				.block_erase = SPI_BLOCK_ERASE_60,
+				.block_erase = SPI_BLOCK_ERASE_C7,
 			}, {
 				.eraseblocks = { {256 * 1024, 1} },
-				.block_erase = SPI_BLOCK_ERASE_C7,
+				.block_erase = SPI_BLOCK_ERASE_60,
 			}
 		},
 //		.printlock	= spi_prettyprint_status_register_bp2_srwd,
