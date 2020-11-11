@@ -199,12 +199,12 @@ int8_t create_fs(const char * fil_str) {   //create fat for backup  flash
     fs = (FATFS *)malloc(sizeof(FATFS));
 		FIL fil;
 		char sd_path[4] = "0:/";
-    char filename[43] = {0};  
+    char filename[46] = {0};  
     memcpy (filename, fil_str, strlen(fil_str));
 	while (strchr (filename, '/') != NULL) {               //replace '/' on '_'
 			*strchr (filename, '/') = '_';
 		}
-	if (flschip != flash_id_to_entry(GENERIC_MANUF_ID, GENERIC_DEVICE_ID)) {
+	if (flschip != flash_id_to_entry(GENERIC_MANUF_ID, GENERIC_DEVICE_ID) &&  (flschip)) {
 	while (strlen(filename) > 37) {
 			if (strrchr (filename, '_') > strrchr (filename, ')')) *strrchr (filename, '_') = '\0';
 			   else *(strrchr (filename, ')') + 1) = '\0';
@@ -223,7 +223,7 @@ int8_t create_fs(const char * fil_str) {   //create fat for backup  flash
 		while(*(uint32_t*)buf_temp == 0) {                        //find position for file size
 			buf_temp = buf_temp - 0x20;
 			}
-		*(uint32_t*)(buf_temp+4) = 	flschip->total_size*1024;				         //set  file size 
+		*(uint32_t*)(buf_temp+4) = 	(flschip)? flschip->total_size*1024 : 0;				         //set  file size 
 		*(uint32_t*)(buf_temp)   =  *(uint32_t*)(buf_temp) + 0x00020000; 					 
 							 
 		
@@ -270,7 +270,7 @@ int8_t STORAGE_GetCapacity(uint8_t lun, uint32_t * block_num,
   switch (lun)
   {
     case 0:
-      *block_num  = flschip->total_size*1024/STORAGE_BLK_SIZ + FAT_FILE_DATA_BLK ;//0x1D;   //STORAGE_BLK_NBR;
+      *block_num  = (flschip) ? flschip->total_size*1024/STORAGE_BLK_SIZ + FAT_FILE_DATA_BLK : 1024*1024/STORAGE_BLK_SIZ + FAT_FILE_DATA_BLK;//0x1D;   //STORAGE_BLK_NBR;
       *block_size = STORAGE_BLK_SIZ;
       break;
     case 1:
@@ -331,7 +331,8 @@ int8_t STORAGE_Read(uint8_t lun, uint8_t * buf, uint32_t blk_addr,
     case 0:
 				//for backup firmware mode
 				if (blk_addr>=FAT_FILE_DATA_BLK && backup_mode) {
-					ReadData((blk_addr-FAT_FILE_DATA_BLK)*STORAGE_BLK_SIZ, buf32, STORAGE_BLK_SIZ*blk_len);
+					if (flschip)  ReadData((blk_addr-FAT_FILE_DATA_BLK)*STORAGE_BLK_SIZ, buf32, STORAGE_BLK_SIZ*blk_len);
+					   else memset(buf, 0, STORAGE_BLK_SIZ*blk_len);
 				}
 				//fill zeros if blk_addr>sizeof(FAT)/STORAGE_BLK_SIZ
 				else if (blk_addr>sizeof(FAT)/STORAGE_BLK_SIZ ) memset (buf, 0, STORAGE_BLK_SIZ*blk_len);
@@ -359,7 +360,7 @@ int8_t Sector_Erase(void)
 	return 0;
 }
 
- int8_t Prepare_FAT(const char * fil_str)
+ int8_t Prepare_FAT(const char * fil_str, const char * dsk_lbl)
 {
 	int8_t ret=0;
 	
@@ -371,8 +372,9 @@ int8_t Sector_Erase(void)
 		ret |= Write_LL((uint32_t)&FAT[0]+(STORAGE_BLK_SIZ*(SECTOR_PER_FAT*1+1)) , &boot_sec[sizeof(boot_sec)- 4*2], 4*1);  //+0x1000
 		ret |= Write_LL((uint32_t)&FAT[0]+(STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK)    , &Label_disk[0], sizeof(Label_disk));	    //+0x1E00
 	
+	  if (dsk_lbl) memcpy(&FAT[0]+STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK+4, dsk_lbl, 6);
 	  if (backup_mode){ 
-			memcpy(&FAT[0]+STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK+4, "BACKUP", 6);		
+			//memcpy(&FAT[0]+STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK+4, "BACKUP", 6);		
 			if (create_fs(fil_str)) return -1; 
 			//fatfs вешает spi
 #ifdef USE_LFN				

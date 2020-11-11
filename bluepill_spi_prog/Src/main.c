@@ -77,6 +77,7 @@ extern bool backup_mode;  //backup firmware first
 extern const struct flashchip * flschip;
 extern unsigned char boot_sec[]; 
 extern const struct flashchip flashchips[];
+extern JEDEC_ID jdc_id_;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -136,7 +137,7 @@ int main(void)
 
 			HAL_Delay(800);
 			backup_mode = true;
-			if (Prepare_FAT(flschip->name)) Error_Handler();		  //backup mode
+			if (Prepare_FAT(flschip->name, "BACKUP")) Error_Handler();		  //backup mode
 			/* USER CODE END SysInit */
 
 			/* Initialize all configured peripherals */
@@ -157,7 +158,7 @@ int main(void)
 			if (EraseChip()) { 
            //flash not erased
            backup_mode = true;
-					 Prepare_FAT("Chip erase error");
+					 Prepare_FAT("Chip erase error", "ERROR ");
 					 HAL_Delay(50); 	
 					 MX_USB_DEVICE_Init();
 					 HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); //USB DP PULLUP				
@@ -165,7 +166,7 @@ int main(void)
 			}
 			LED_Off();
 			HAL_Delay(100);
-			if (Prepare_FAT(NULL)) Error_Handler();  //update mode
+			if (Prepare_FAT(NULL, "PROG  ")) Error_Handler();  //update mode
 			MX_USB_DEVICE_Init();	
 			HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET);        //USB DP PULLUP				
 			/* USER CODE END 2 */
@@ -193,7 +194,7 @@ int main(void)
 						if (!(CRCValue_nominal == CRCValue_actual) || (error)){
 							 //error CRC or any other error
 							 backup_mode = true;
-							 Prepare_FAT("CRC error after programming");
+							 Prepare_FAT("CRC error after programming", "ERROR ");
 							 HAL_Delay(50); 	
 							 MX_USB_DEVICE_Init();
 							 HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); //USB DP PULLUP
@@ -213,8 +214,18 @@ int main(void)
 		 else {                                          //flash not identified  or wrong connection 
 			   HAL_Delay(800);
 			   //flschip = flash_id_to_entry(GENERIC_MANUF_ID, GENERIC_DEVICE_ID);
+			   boot_sec[32] = ((1024*1024/STORAGE_BLK_SIZ) & 0xFF) + FAT_FILE_DATA_BLK; //NumberOfSectors32 
+		     boot_sec[33] = ((1024*1024/STORAGE_BLK_SIZ) >>  8) & 0xFF;               //NumberOfSectors32
+         boot_sec[34] = ((1024*1024/STORAGE_BLK_SIZ) >> 16) & 0xFF;	              //NumberOfSectors32		 
 			   backup_mode = true;
-			   Prepare_FAT("unknown SPI chip or wrong connections");
+			   //if the chip is not recognized, but the ID is read
+			   if (!(jdc_id_.man_id == 0xFF && (jdc_id_.dev_id == 0xFFFF | jdc_id_.dev_id == 0xFF | jdc_id_.dev_id == 0x00))){
+					  //use crc_buf for string buffer
+					  sprintf((char *)&crc_buf[0],"unknown SPI chip manId 0x%X devId 0x%X", jdc_id_.man_id, jdc_id_.dev_id);
+					  Prepare_FAT((char *)&crc_buf[0], "ERROR ");
+				 }
+				     //if the chip is not recognized and the ID is not readable
+			       else Prepare_FAT("unknown SPI chip or wrong connections", "ERROR ");
 			   HAL_Delay(50); 	
 				 MX_USB_DEVICE_Init();
 		     HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); //USB DP PULLUP
