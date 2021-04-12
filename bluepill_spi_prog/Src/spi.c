@@ -11,9 +11,12 @@
 #include "flashchips.h"
 
 extern const struct flashchip * flschip;
+extern uint16_t page_sze;
 bool in_4ba_mode = false;
 int address_high_byte = 0;
 
+
+static uint32_t address_to_bits(uint32_t addr);
 
 
 void delay_mic(void)
@@ -91,6 +94,81 @@ int32_t SendCmd (uint8_t * cmd, uint8_t bytes) {
 	//delay_mic();
 
   return (status);
+}
+
+/* Send command with optional data and wait until busy */
+int32_t SendCommand_at45 (uint8_t cmd, uint32_t addr, const uint8_t *data, uint32_t size) {
+  uint32_t page_addr;
+  uint32_t page_offs;
+  uint8_t  buf[4];
+  uint8_t  sr;
+  int32_t  result, addr_;
+
+	addr_ = at45db_convert_addr(addr, page_sze);  //FLASH_PAGE_SIZE_
+
+  /* Prepare Command with address */
+  buf[0] = cmd;
+  buf[1] = (uint8_t)(addr_ >> 16);
+  buf[2] = (uint8_t)(addr_ >>  8);
+  buf[3] = (uint8_t)(addr_ >>  0);
+
+  /* Select Slave */
+  result = ptrSPI->Control(ARM_SPI_CONTROL_SS, ARM_SPI_SS_ACTIVE);
+  if (result != ARM_DRIVER_OK) return result;
+
+  /* Send Command with address */
+  result = ptrSPI->Send(buf, 4);
+  if (result != ARM_DRIVER_OK) goto transfer_error;
+  while (ptrSPI->GetDataCount() != 4){
+				  __asm("nop");
+			    }
+
+  /* Send Data */
+  if ((data != NULL) && (size != 0)) {
+    result = ptrSPI->Send(data, size);
+    if (result != ARM_DRIVER_OK) goto transfer_error;
+    while (ptrSPI->GetDataCount() != size){
+				  __asm("nop");
+			    };
+  }
+
+  /* Deselect Slave */
+  result = ptrSPI->Control(ARM_SPI_CONTROL_SS, ARM_SPI_SS_INACTIVE);
+  if (result != ARM_DRIVER_OK) return result;
+
+  /* Prepare Read Status Command */
+  buf[0] = AT45DB_STATUS;
+  buf[1] = 0xFF;                /* Dummy byte */
+
+  /* Select Slave */
+  result = ptrSPI->Control(ARM_SPI_CONTROL_SS, ARM_SPI_SS_ACTIVE);
+  if (result != ARM_DRIVER_OK) return result;
+
+  /* Send Command */
+  result = ptrSPI->Send(buf, 2);
+  if (result != ARM_DRIVER_OK) goto transfer_error;
+  while (ptrSPI->GetDataCount() != 2){
+				  __asm("nop");
+			    };
+
+  /* Check Status Register */
+  do {
+    result = ptrSPI->Receive(&sr, 1);
+    if (result != ARM_DRIVER_OK) goto transfer_error;
+    while (ptrSPI->GetDataCount() != 1){
+				  __asm("nop");
+			    };
+  } while ((sr & 0x80) == 0);
+
+  /* Deselect Slave */
+  result = ptrSPI->Control(ARM_SPI_CONTROL_SS, ARM_SPI_SS_INACTIVE);
+  if (result != ARM_DRIVER_OK) return result;
+
+  return ARM_DRIVER_OK;
+
+transfer_error:
+  ptrSPI->Control(ARM_SPI_CONTROL_SS, ARM_SPI_SS_INACTIVE);
+  return ARM_DRIVER_ERROR;
 }
 
 /* Read status or flag status register */
@@ -278,7 +356,7 @@ static int32_t spi_disable_blockprotect_generic(uint8_t bp_mask, uint8_t lock_ma
 	status = ReadStatusReg(CMD_READ_STATUS, &stat);
 	if (status != ARM_DRIVER_OK) return status;
 	if ((stat & bp_mask) == 0) {
-		//printf("Block protection is disabled.\n");
+		SPI_UsrLog("\nBlock protection is disabled.");
 		return ARM_DRIVER_OK;
 	}
 
@@ -399,6 +477,24 @@ int32_t spi_disable_blockprotect_at25fs040(void)
 	return spi_disable_blockprotect_generic(0x7C, 1 << 7, 0, 0xFF);
 }
 
+int spi_disable_blockprotect_at45db(void)
+{
+	static const uint8_t cmd[4] = { AT45DB_DISABLE_PROTECT }; /* NB: 4 bytes magic number */
+	int ret = SendCmd ((uint8_t *)&cmd[0], 4);
+	if (ret != 0) {
+		SPI_UsrLog("Sending disable lockdown failed!\n");
+		return ret;
+	}
+	uint8_t status;
+	ret = ReadStatusReg(AT45DB_STATUS, &status);
+	if (ret != 0 || ((status & AT45DB_PROT) != 0)) {
+		SPI_UsrLog("Disabling lockdown failed!\n");
+		return 1;
+	}
+
+	return 0;
+}
+
 static int spi_write_extended_address_register(const uint8_t regdata)
 {
 	int32_t status;
@@ -480,5 +576,24 @@ int spi_exit_4ba(void)
 	 else return ARM_DRIVER_ERROR;
 					
 	return status;
+}
+
+/* Returns the minimum number of bits needed to represent the given address.
+ * FIXME: use mind-blowing implementation. */
+static uint32_t address_to_bits(uint32_t addr)
+{
+	unsigned int lzb = 0;
+	while (((1 << (31 - lzb)) & ~addr) != 0)
+		lzb++;
+	return 32 - lzb;
+}
+
+
+unsigned int at45db_convert_addr(unsigned int addr, unsigned int page_size)
+{
+	unsigned int page_bits = address_to_bits(page_size - 1);
+	unsigned int at45db_addr = ((addr / page_size) << page_bits) | (addr % page_size);
+	
+	return at45db_addr;
 }
 /************************************************END************************************************/

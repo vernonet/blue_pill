@@ -20,4 +20,4 @@ uint8_t SWPressed (void) {
 		else break;
 	} 
   return (0);
-}	
+}

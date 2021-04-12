@@ -66,4 +66,7 @@ int32_t spi_chip_write_af     (uint32_t addr, const void *data, uint32_t cnt);
 int32_t spi_chip_write_1      (uint32_t addr, const void *data, uint32_t cnt);
 int32_t spi_erase_bulk        (uint8_t cmd); 
 int32_t spi_erase_bulk_sec    (uint8_t cmd);
+int32_t spi_read_at45db       (uint32_t addr, void *data, uint32_t cnt);
+int32_t spi_write_at45db      (uint32_t addr, const void *data, uint32_t cnt);
+int32_t spi_erase_bulk_at45   (uint8_t cmd);
 

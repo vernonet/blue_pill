@@ -81,6 +81,11 @@
 #define SPI_BLOCK_ERASE_D7      (0xD7U)
 #define SPI_BLOCK_ERASE_DC      (0xDCU)
 
+#define SPI_AT45DB_PAGE_ERASE           (0x81)
+#define SPI_AT45DB_BLOCK_ERASE          (0x50)
+#define SPI_AT45DB_SECTOR_ERASE         (0x7C)
+#define SPI_AT45DB_CHIP_ERASE           (0xC7)
+#define SPI_AT45DB_CHIP_ERASE_ADDR      (0x94809A) /* Magic address. See usage. */
 
 
 
@@ -504,6 +509,17 @@
 #define WINBOND_NEX_W25Q128J	0x7018
 #define WINBOND_NEX_W25Q256JV	0x7019
 
+
+#define ISSI_ID			0xD5	/* ISSI Integrated Silicon Solutions, see also PMC. */
+#define ISSI_ID_SPI		0x9D	/* ISSI ID used for SPI flash, see also PMC_ID_NOPREFIX */
+#define ISSI_IS25LP064		0x6017
+#define ISSI_IS25WQ020		0x1152
+#define ISSI_IS25LP128		0x6018
+#define ISSI_IS25LP256		0x6019
+#define ISSI_IS25WP032		0x7016
+#define ISSI_IS25WP064		0x7017
+#define ISSI_IS25WP128		0x7018
+#define ISSI_IS25WP256		0x7019
 
 
 typedef unsigned long chipaddr;

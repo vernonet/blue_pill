@@ -120,6 +120,7 @@ JEDEC_ID jdc_id_ = {0};
 bool first = true;
 volatile bool led_on = false;
 extern bool in_4ba_mode;
+uint16_t page_sze;
 
 
 
@@ -167,6 +168,15 @@ const struct flashchip * ReadId (void) {
 							SPI_UsrLog ("\n Vendor - %s\n Chip   - %s\n Size   - %d Kbytes\n\n\n",\
 							flschip_->vendor, flschip_->name, flschip_->total_size);
 							//FlashInfo.sector_count = flschip_->block_erasers->eraseblocks[0].count;
+							if (jdc_id_.man_id == ATMEL_ID && (jdc_id_.dev_id == ATMEL_AT45DB021D | jdc_id_.dev_id == ATMEL_AT45DB041D | jdc_id_.dev_id == ATMEL_AT45DB081D)) {	
+							  uint8_t status;	
+							  int32_t st = ReadStatusReg(AT45DB_STATUS, &status);
+	              if (st == 0){
+			            if (status & AT45DB_POWEROF2) page_sze = 256;
+			             else page_sze = 264;
+		            }
+						  }
+								
 							first = false;
 							}
 						}
@@ -470,7 +480,8 @@ int32_t Uninitialize (void) {
 */
  int32_t ReadData (uint32_t addr, void *data, uint32_t cnt) {
 	 
-	//memset(data, 0, cnt); 
+	if ((addr & 0x3fff)  == 0) LED_Toggle();//indicate reading
+	 
 	SPI_UsrLog ("\n rd_addr -> 0x%05x   cnt -> 0x%03x", addr, cnt); 
   
   return (flschip->read(addr, data, cnt));
@@ -488,12 +499,11 @@ int32_t Uninitialize (void) {
   uint8_t  buf[9];
   int32_t  status;
 	uint8_t bytes=0;	
+		
 
   if ((addr > (flschip->total_size*1024)) || (data == NULL)) {
     return ARM_DRIVER_ERROR_PARAMETER;
   }
-	
-	if ((addr & 0x3fff)  == 0) LED_Toggle();//indicate reading
 
 
   /* Prepare Command with address */
@@ -541,10 +551,78 @@ int32_t Uninitialize (void) {
   }
   ptrSPI->Control(ARM_SPI_CONTROL_SS, ARM_SPI_SS_INACTIVE);
 
-	//LED_Off(); 
+	
   return (status);
 }
 	
+
+/**
+  \fn          int32_t ARM_Flash_ReadData (uint32_t addr, void *data, uint32_t cnt)
+  \brief       Read data from Flash.
+  \param[in]   addr  Data address.
+  \param[out]  data  Pointer to a buffer storing the data read from Flash.
+  \param[in]   cnt   Number of data items to read.
+  \return      number of data items read or \ref execution_status
+*/
+ int32_t spi_read_at45db (uint32_t addr, void *data, uint32_t cnt) {
+  uint32_t page_addr;
+  uint32_t page_offs;
+  uint8_t  buf[8] = {0};
+  int32_t  result;
+	uint32_t addr_;
+
+  LED_On();                //indicate reading
+	 
+  if ((addr > (FLASH_SECTOR_COUNT * FLASH_SECTOR_SIZE)) || (data == NULL)) {
+    return ARM_DRIVER_ERROR_PARAMETER;
+  }
+
+	addr_ = at45db_convert_addr(addr, page_sze);
+
+  /* Prepare Command with address */
+  buf[0] = AT45DB_READ_ARRAY;
+  buf[1] = (uint8_t)(addr_ >> 16);
+  buf[2] = (uint8_t)(addr_ >>  8);
+  buf[3] = (uint8_t)(addr_ >>  0);
+  /* buf[4..7]: don't care */
+
+  /* Select Slave */
+  result = ptrSPI->Control(ARM_SPI_CONTROL_SS, ARM_SPI_SS_ACTIVE);
+  if (result != ARM_DRIVER_OK) {
+     LED_Off();               
+	   return result; }
+
+  /* Send Command with Address */
+  result = ptrSPI->Send(buf, 8U);
+  if (result != ARM_DRIVER_OK) { goto transfer_error; }
+  while (ptrSPI->GetDataCount() != 8U){
+				  __asm("nop");
+			    };
+
+  /* Receive Data */
+  result = ptrSPI->Receive(data, cnt);
+  if (result != ARM_DRIVER_OK) { goto transfer_error; }
+  while (ptrSPI->GetDataCount() != cnt){
+				  __asm("nop");
+			    }
+
+  /* Deselect Slave */
+  result = ptrSPI->Control(ARM_SPI_CONTROL_SS, ARM_SPI_SS_INACTIVE);
+  if (result != ARM_DRIVER_OK) {
+     LED_Off();                	
+	   return result; 
+	}
+
+	LED_Off();                 //indicate reading
+  return (int32_t)cnt;
+	
+	
+
+transfer_error:
+  ptrSPI->Control(ARM_SPI_CONTROL_SS, ARM_SPI_SS_INACTIVE);
+	LED_Off();                 //indicate reading
+  return ARM_DRIVER_ERROR;
+}
 
 
 /**
@@ -557,7 +635,9 @@ int32_t Uninitialize (void) {
 */
  int32_t ProgramData (uint32_t addr, const void *data, uint32_t cnt) {
 	 //int32_t sts;
-	 int32_t  status;
+	 int32_t  status;	 
+	 
+	 if ((addr & 0x1fff)  == 0) LED_Toggle();                //indicate writing
 	 
 	 if (!(flschip->write))  {
 		  SPI_UsrLog("\n No write support!");
@@ -580,7 +660,6 @@ int32_t Uninitialize (void) {
 //			return 1;
 //		}
 //	}	
-	 if ((addr & 0x1fff)  == 0) LED_Toggle();                //indicate writing
 	
 	 status = flschip->write(addr, data, cnt);
 	
@@ -589,6 +668,7 @@ int32_t Uninitialize (void) {
 	 if (status < 0) {
 		 SPI_UsrLog("\n ProgramData error -> %d", status);
 	 }
+	 
   
   return (status);
 }
@@ -989,6 +1069,46 @@ int32_t spi_chip_write_1 (uint32_t addr, const void *data, uint32_t cnt) {  // o
 }
 
 /**
+  \fn          int32_t ARM_Flash_ProgramData (uint32_t addr, const void *data, uint32_t cnt)
+  \brief       Program data to Flash.
+  \param[in]   addr  Data address.
+  \param[in]   data  Pointer to a buffer containing the data to be programmed to Flash.
+  \param[in]   cnt   Number of data items to program.
+  \return      number of data items programmed or \ref execution_status
+*/
+ int32_t spi_write_at45db (uint32_t addr, const void *data, uint32_t cnt) {
+  const uint8_t *buf;
+        uint32_t n;
+
+	LED_On();                 //indicate writing 
+	 
+  buf = data;
+  while (cnt) {
+    if (SendCommand_at45(AT45DB_PAGE_READ, addr, NULL, 0U)) {
+      return ARM_DRIVER_ERROR;
+    }
+
+    n = FLASH_PAGE_SIZE_ - (addr % page_sze);
+    if (n > cnt) { n = cnt; }
+    
+    if (SendCommand_at45(AT45DB_BUFFER1_WRITE, addr, buf, n)) {
+      return ARM_DRIVER_ERROR;
+    }
+    if (SendCommand_at45(AT45DB_BUFFER1_PAGE_PROGRAM, addr, NULL, 0U)) {
+      return ARM_DRIVER_ERROR;
+    }
+
+    addr += n;
+    buf  += n;
+    cnt  -= n;
+  }
+	
+	LED_Off();            //indicate writing
+
+  return ARM_DRIVER_OK;
+}
+
+/**
   \fn          int32_t ARM_Flash_EraseSector (uint32_t addr)
   \brief       Erase Flash Sector.
   \param[in]   addr  Sector address
@@ -1115,7 +1235,7 @@ static int32_t isErased (void) {
  
 int32_t spi_erase_bulk (uint8_t cmd) {
   //uint8_t cmd[4];
-  int32_t status;
+  int32_t status = ARM_DRIVER_OK;
 	uint8_t buf[4];
 	volatile int32_t led_tgl=30;
 	
@@ -1207,6 +1327,53 @@ int32_t spi_erase_bulk (uint8_t cmd) {
 	   else SPI_UsrLog ("\n Flash erased!!!, all 0xFF\n");
   return status;
 }
+ 
+
+int32_t spi_erase_bulk_at45 (uint8_t cmd) {  //there cmd not used
+  uint8_t cmd_[4]  = { AT45DB_CHIP_ERASE };
+  int32_t status ;
+	uint8_t buf[4];
+	volatile int32_t led_tgl=30;
+	
+	 
+	if (isErased() == 0) return ARM_DRIVER_OK; //no need execute erase
+	 
+	if (flschip->unlock) {  //(flschip->unlock == spi_disable_blockprotect)
+		status = flschip->unlock();//spi_disable_blockprotect(); // 
+		if (status) return status;
+		}
+
+  FlashStatus.busy  = 1U;
+  FlashStatus.error = 0U;
+
+  status = SendCmd(&cmd_[0], 4U);
+		
+		do {
+          status = ReadStatusReg(AT45DB_STATUS, &buf[0]);  //
+          if (status != ARM_DRIVER_OK) {
+            break;
+          }
+					if (led_tgl-- == 0) {LED_Toggle(); led_tgl = 10;}
+		      HAL_Delay(1);
+          /* Check Flags Status register value */
+          if (buf[0] & AT45DB_READY) {
+            FlashStatus.busy = 0U;
+          }
+
+        }
+        while (!(buf[0] & AT45DB_READY));
+  
+ 
+	 if (isErased()){ 
+	   SPI_UsrLog ("\n Flash not erased!!!\n");
+		 return ARM_DRIVER_ERROR;
+	 }
+	   else SPI_UsrLog ("\n Flash erased!!!, all 0xFF\n");
+   LED_Off();
+   return status;
+ 
+}
+
 
 /**
   \fn          ARM_FLASH_STATUS ARM_Flash_GetStatus (void)
