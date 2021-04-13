@@ -2,7 +2,6 @@
 
 It allows you to write different SPI flash memory by drag and drop the file in USB Mass Storage.
 Created using Cube MX and Keil, also used source code <a href="https://github.com/flashrom/flashrom" rel="nofollow">Flashrom</a>.
-Need STM32F103 chip with 128kb Flash.
 
 # Features
 
