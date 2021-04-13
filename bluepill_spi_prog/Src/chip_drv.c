@@ -168,12 +168,14 @@ const struct flashchip * ReadId (void) {
 							SPI_UsrLog ("\n Vendor - %s\n Chip   - %s\n Size   - %d Kbytes\n\n\n",\
 							flschip_->vendor, flschip_->name, flschip_->total_size);
 							//FlashInfo.sector_count = flschip_->block_erasers->eraseblocks[0].count;
-							if (jdc_id_.man_id == ATMEL_ID && (jdc_id_.dev_id == ATMEL_AT45DB021D | jdc_id_.dev_id == ATMEL_AT45DB041D | jdc_id_.dev_id == ATMEL_AT45DB081D)) {	
+							if (jdc_id_.man_id == ATMEL_ID && (jdc_id_.dev_id == ATMEL_AT45DB021D | jdc_id_.dev_id == ATMEL_AT45DB041D\
+								  | jdc_id_.dev_id == ATMEL_AT45DB081D | jdc_id_.dev_id == ATMEL_AT45DB161D\
+    							| jdc_id_.dev_id == ATMEL_AT45DB321D | jdc_id_.dev_id == ATMEL_AT45DB642D)) {	
 							  uint8_t status;	
 							  int32_t st = ReadStatusReg(AT45DB_STATUS, &status);
 	              if (st == 0){
-			            if (status & AT45DB_POWEROF2) page_sze = 256;
-			             else page_sze = 264;
+			            if (status & AT45DB_POWEROF2) page_sze = (flschip_->page_size/256) *  256;
+			             else page_sze = (flschip_->page_size/256) * 264;
 		            }
 						  }
 								
@@ -1088,7 +1090,7 @@ int32_t spi_chip_write_1 (uint32_t addr, const void *data, uint32_t cnt) {  // o
       return ARM_DRIVER_ERROR;
     }
 
-    n = FLASH_PAGE_SIZE_ - (addr % page_sze);
+    n = page_sze - (addr % page_sze);  //FLASH_PAGE_SIZE_
     if (n > cnt) { n = cnt; }
     
     if (SendCommand_at45(AT45DB_BUFFER1_WRITE, addr, buf, n)) {
@@ -1225,11 +1227,14 @@ static int32_t isErased (void) {
 		 SPI_UsrLog("\n No erase support!");
 		 return ARM_DRIVER_ERROR_UNSUPPORTED;
 	 }
+#ifndef SIMPLY_FLS_BASE	 
 	 for (i = 0; i < NUM_ERASEFUNCTIONS; i++) {
 		 //search for a command to erase the entire chip,  not individual sectors
 		 if (flschip->block_erasers[i].eraseblocks->count == 1 && flschip->block_erasers[i].eraseblocks[1].size == 0) break;
 	 }
-	 
+#else
+	 i = 0;
+#endif	 
 	 return flschip->erase(flschip->block_erasers[i].block_erase);
  }
  

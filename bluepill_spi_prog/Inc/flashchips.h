@@ -36,12 +36,20 @@
  * How many different contiguous runs of erase blocks with one size each do
  * we have for a given erase function?
  */
+#ifndef SIMPLY_FLS_BASE              //Reduce the occupied flash memory         
 #define NUM_ERASEREGIONS 5
+#else
+#define NUM_ERASEREGIONS 1
+#endif
 /*
  * How many different erase functions do we have per chip?
  * Atmel AT25FS010 has 6 different functions.
  */
+#ifndef SIMPLY_FLS_BASE             //Reduce the occupied flash memory 
 #define NUM_ERASEFUNCTIONS 8
+#else
+#define NUM_ERASEFUNCTIONS 1
+#endif
 
 
 /* Feature bits used for SPI only */
@@ -200,6 +208,7 @@
 #define ATMEL_AT45DB321E	/* same as above but with EDI 0x0100 */
 #define ATMEL_AT45DB321D	0x2701 /* Buggy data sheet */
 #define ATMEL_AT45DB642		/* No ID (opcode) available for AT45DB642 */
+#define ATMEL_AT45DB642D	0x2800
 
 /*
  * EN25 chips are SPI, first byte of device ID is memory type,
