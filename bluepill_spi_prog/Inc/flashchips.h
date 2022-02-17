@@ -210,6 +210,12 @@
 #define ATMEL_AT45DB642		/* No ID (opcode) available for AT45DB642 */
 #define ATMEL_AT45DB642D	0x2800
 
+/* Boya/BoHong Microelectronics Inc. */
+#define BOYA_BOHONG_ID		      0x68
+#define BOYA_BOHONG_B_25D16A	  0x4015
+#define BOYA_BOHONG_B_25Q32BS	  0x4016
+#define BOYA_BOHONG_B_25Q128AS	0x4018
+
 /*
  * EN25 chips are SPI, first byte of device ID is memory type,
  * second byte of device ID is log(bitsize)-9.
