@@ -87,3 +87,4 @@ int32_t spi_disable_blockprotect_at25fs040(void);
 int32_t spi_disable_blockprotect_at45db(void);
 
 uint32_t CalcCRC32(uint8_t *Buf, uint32_t Len, uint32_t id);
+uint32_t CalcCRC32_n(uint8_t *Buf, uint32_t Len, uint32_t id, uint32_t buff_sze);

@@ -744,7 +744,7 @@ const struct  flashchip  flashchips[]  =  {
 		.total_size	= 16384,
 		.page_size	= 256,
 		/* supports SFDP */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_QPI,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_QPI | FEATURE_WRSR_EWSR,
 		.tested		= TEST_OK_PREW,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -1193,7 +1193,7 @@ const struct  flashchip  flashchips[]  =  {
 		.total_size	= 64,
 		.page_size	= 256,
 		/* OTP: 128B total, 64B pre-programmed; read 0x77; write 0x9B */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR,
 		.tested		= TEST_UNTESTED,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -3907,7 +3907,7 @@ const struct  flashchip  flashchips[]  =  {
 		.total_size	= 2048,
 		.page_size	= 256,
 		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42, erase 0x44 */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR,
 		.tested		= TEST_OK_PREW,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -3949,7 +3949,7 @@ const struct  flashchip  flashchips[]  =  {
 		.total_size	= 4096,
 		.page_size	= 256,
 		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42, erase 0x44 */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR,
 		.tested		= TEST_OK_PREW,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -3991,7 +3991,7 @@ const struct  flashchip  flashchips[]  =  {
 		.total_size	= 8192,
 		.page_size	= 256,
 		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42, erase 0x44 */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR,
 		.tested		= TEST_OK_PREW,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -4033,7 +4033,7 @@ const struct  flashchip  flashchips[]  =  {
 		.total_size	= 16384,
 		.page_size	= 256,
 		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42, erase 0x44 */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR,
 		.tested		= TEST_OK_PREW,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -4075,7 +4075,7 @@ const struct  flashchip  flashchips[]  =  {
 		.total_size	= 32768,
 		.page_size	= 256,
 		/* OTP: 512B total; enter 0xB1, exit 0xC1 */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_4BA,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_4BA | FEATURE_WRSR_EWSR,
 		.tested		= TEST_OK_PREW,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -4355,7 +4355,7 @@ const struct  flashchip  flashchips[]  =  {
 		.page_size	= 256,
 		/* MX25L8006E, MX25L8008E support SFDP */
 		/* OTP: 64B total; enter 0xB1, exit 0xC1 (MX25L8006E, MX25L8008E only) */
-		.feature_bits	= FEATURE_WRSR_WREN,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_WRSR_EWSR,
 		.tested		= TEST_OK_PREW,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -7953,7 +7953,7 @@ const struct  flashchip  flashchips[]  =  {
 		/* supports SFDP */
 		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42, erase 0x44, read ID 0x4B */
 		/* FOUR_BYTE_ADDR: supports 4-bytes addressing mode */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_4BA_ENTER_WREN
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR | FEATURE_4BA_ENTER_WREN
 			| FEATURE_4BA_EXT_ADDR | FEATURE_4BA_READ | FEATURE_4BA_FAST_READ,
 		.tested		= TEST_OK_PREW,
 //		.probe		= probe_spi_rdid,
@@ -7995,7 +7995,7 @@ const struct  flashchip  flashchips[]  =  {
 		.model_id	= WINBOND_NEX_W25Q40EW,
 		.total_size	= 512,
 		.page_size	= 256,
-		.feature_bits	= FEATURE_WRSR_WREN,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_WRSR_EWSR,
 //		.tested		= TEST_OK_PREWU,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -8037,7 +8037,7 @@ const struct  flashchip  flashchips[]  =  {
 		.total_size	= 1024,
 		.page_size	= 256,
 		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42 */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR,
 //		.tested		= TEST_OK_PREWU,
 		//.probe		= probe_spi_rdid,
 		//.probe_timing	= TIMING_ZERO,
@@ -8079,7 +8079,7 @@ const struct  flashchip  flashchips[]  =  {
 		.total_size	= 2048,
 		.page_size	= 256,
 		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42 */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR,
 		.tested		= TEST_OK_PREWU,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -8121,7 +8121,7 @@ const struct  flashchip  flashchips[]  =  {
 		.total_size	= 4096,
 		.page_size	= 256,
 		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42 */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR,
 		.tested		= TEST_OK_PREWU,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -8162,7 +8162,7 @@ const struct  flashchip  flashchips[]  =  {
 		.model_id	= WINBOND_NEX_W25Q32_W,
 		.total_size	= 4096,
 		.page_size	= 256,
-		.feature_bits	= FEATURE_WRSR_WREN,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_WRSR_EWSR,
 		.tested		= TEST_OK_PREWU,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -8204,7 +8204,7 @@ const struct  flashchip  flashchips[]  =  {
 		.total_size	= 8192,
 		.page_size	= 256,
 		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42 */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR,
 //		.tested		= TEST_OK_PREWU,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -8245,7 +8245,7 @@ const struct  flashchip  flashchips[]  =  {
 		.model_id	= WINBOND_NEX_W25Q64_W,
 		.total_size	= 8192,
 		.page_size	= 256,
-		.feature_bits	= FEATURE_WRSR_WREN,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_WRSR_EWSR,
 //		.tested		= TEST_OK_PREWU,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -8287,7 +8287,7 @@ const struct  flashchip  flashchips[]  =  {
 		.total_size	= 16384,
 		.page_size	= 256,
 		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42 */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR,
 		.tested		= TEST_OK_PREWU,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -8372,7 +8372,7 @@ const struct  flashchip  flashchips[]  =  {
 		.model_id	= WINBOND_NEX_W25Q128J,
 		.total_size	= 16384,
 		.page_size	= 256,
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR,
 		.tested		= TEST_OK_PREWU,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,

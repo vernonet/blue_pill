@@ -14,6 +14,7 @@ extern const struct flashchip * flschip;
 extern uint16_t page_sze;
 bool in_4ba_mode = false;
 int address_high_byte = 0;
+bool displ_blk_prot = true;  //display block protections message
 
 
 static uint32_t address_to_bits(uint32_t addr);
@@ -26,6 +27,8 @@ void delay_mic(void)
 }
 
 //id - UID of chip, if not use -> id=0U
+//attention, the buffer size affects the result
+//for the calculation to match with Windows utilities, the buffer size must be 0x200 
 uint32_t CalcCRC32(uint8_t *Buf, uint32_t Len, uint32_t id)   //calc CRC hardware
 {
         unsigned int i;
@@ -69,6 +72,28 @@ uint32_t CalcCRC32(uint8_t *Buf, uint32_t Len, uint32_t id)   //calc CRC hardwar
 
         Temp ^= 0xFFFFFFFFul;
         return Temp;
+}
+
+
+//attention, the buffer size affects the result
+//The buffer size for calculating CRCValue_actual and CRCValue_nominal must be the same
+uint32_t CalcCRC32_n(uint8_t *Buf, uint32_t Len, uint32_t id, uint32_t buff_sze) 
+{
+	uint32_t adr = 0, len = 0;
+	__IO uint32_t CRCVal = id;
+	
+	 while (adr < Len)
+            {
+              if (Len - adr > buff_sze)
+                len = buff_sze;
+              else
+                len = Len - adr;
+              CRCVal = CalcCRC32(Buf, len, CRCVal);
+              adr += len;
+							Buf += len;
+            }
+						
+	return CRCVal;
 }
 
 /* Send cmd to chip */
@@ -244,7 +269,9 @@ static int32_t WriteStatusReg (uint8_t sr) {
 		feature_bits |= FEATURE_WRSR_EWSR;
 	}
 	
-	if (feature_bits & FEATURE_WRSR_WREN) SetWriteEnable();
+	if (feature_bits & FEATURE_WRSR_WREN) {
+		SetWriteEnable();
+	}
 	
 	if (feature_bits & FEATURE_WRSR_EWSR) {
 	
@@ -354,9 +381,14 @@ static int32_t spi_disable_blockprotect_generic(uint8_t bp_mask, uint8_t lock_ma
 	
 
 	status = ReadStatusReg(CMD_READ_STATUS, &stat);
+	if (stat == 0xFF)     //chip not present
+	{
+		SPI_UsrLog("\ndisable_blockprotect: StatusReg -> 0xFF, maybe chip disconected");
+		return ARM_DRIVER_ERROR_STS_REG_FF; 
+	}
 	if (status != ARM_DRIVER_OK) return status;
 	if ((stat & bp_mask) == 0) {
-		SPI_UsrLog("\nBlock protection is disabled.");
+		if (displ_blk_prot) SPI_UsrLog("\nBlock protection is disabled.");
 		return ARM_DRIVER_OK;
 	}
 
@@ -387,12 +419,18 @@ static int32_t spi_disable_blockprotect_generic(uint8_t bp_mask, uint8_t lock_ma
 		SPI_UsrLog("write_status_register failed.\n");
 		return status;
 	}
+	/* WRSR performs a self-timed erase before the changes take effect.
+	 * This may take 50-85 ms in most cases, and some chips apparently
+	 * allow running RDSR only once. Therefore pick an initial delay of
+	 * 100 ms, then wait in 10 ms steps until a total of 5 s have elapsed.
+	 */
+	HAL_Delay(100);   
 	status = ReadStatusReg(CMD_READ_STATUS, &stat);
 	if (status != ARM_DRIVER_OK) return status;
 	if ((stat & bp_mask) != 0) {
 		SPI_UsrLog("Block protection could not be disabled!\n");
 		//flash->chip->printlock(flash);
-		return ARM_DRIVER_ERROR_SPECIFIC;
+		return ARM_DRIVER_ERROR_BLK_PROT;
 	}
 	SPI_UsrLog("disabled.\n");
 	return ARM_DRIVER_OK;
@@ -479,20 +517,30 @@ int32_t spi_disable_blockprotect_at25fs040(void)
 
 int spi_disable_blockprotect_at45db(void)
 {
-	static const uint8_t cmd[4] = { AT45DB_DISABLE_PROTECT }; /* NB: 4 bytes magic number */
-	int ret = SendCmd ((uint8_t *)&cmd[0], 4);
+
+	int ret;
+	uint8_t status;
+	
+	ret = ReadStatusReg(AT45DB_STATUS, &status);
+	if (status == 0xFF)     //chip not present
+	{
+		SPI_UsrLog("\ndisable_blockprotect: StatusReg -> 0xFF, maybe chip disconected");
+		return ARM_DRIVER_ERROR_STS_REG_FF; 
+	}
+	static const uint8_t cmd[4] = { AT45DB_DISABLE_PROTECT }; /* NB: 4 bytes magic number */;
+	ret = SendCmd ((uint8_t *)&cmd[0], 4);
 	if (ret != 0) {
 		SPI_UsrLog("Sending disable lockdown failed!\n");
 		return ret;
 	}
-	uint8_t status;
+	
 	ret = ReadStatusReg(AT45DB_STATUS, &status);
 	if (ret != 0 || ((status & AT45DB_PROT) != 0)) {
 		SPI_UsrLog("Disabling lockdown failed!\n");
-		return 1;
+		return ARM_DRIVER_ERROR_BLK_PROT;
 	}
 
-	return 0;
+	return ARM_DRIVER_OK;
 }
 
 static int spi_write_extended_address_register(const uint8_t regdata)

@@ -71,13 +71,12 @@
 #endif
 
 #ifndef DRIVER_SPI_BUS_SPEED
-#define DRIVER_SPI_BUS_SPEED    24000000  /* Default SPI bus speed */
+#define DRIVER_SPI_BUS_SPEED    9000000  /* Default SPI bus speed */
 #endif
 
 /* SPI Bus Speed */
 #define SPI_BUS_SPEED   ((uint32_t)DRIVER_SPI_BUS_SPEED)
 
-//uint16_t fl_sec_cnt = FLASH_SECTOR_COUNT;
 
 /* Flash Information */
  ARM_FLASH_INFO FlashInfo = {
@@ -115,12 +114,14 @@ static const ARM_FLASH_CAPABILITIES DriverCapabilities = {
 };
 
 //extern const struct flashchip flashchips[];
-const struct flashchip * flschip = NULL; //&flashchips[0];
+const struct flashchip * flschip = NULL; 
 JEDEC_ID jdc_id_ = {0};
 bool first = true;
 volatile bool led_on = false;
 extern bool in_4ba_mode;
+extern bool displ_blk_prot;
 uint16_t page_sze;
+bool is_unlocked = false;
 
 
 
@@ -573,7 +574,6 @@ int32_t Uninitialize (void) {
   int32_t  result;
 	uint32_t addr_;
 
-  LED_On();                //indicate reading
 	 
   if ((addr > (FLASH_SECTOR_COUNT * FLASH_SECTOR_SIZE)) || (data == NULL)) {
     return ARM_DRIVER_ERROR_PARAMETER;
@@ -615,7 +615,6 @@ int32_t Uninitialize (void) {
 	   return result; 
 	}
 
-	LED_Off();                 //indicate reading
   return (int32_t)cnt;
 	
 	
@@ -645,9 +644,10 @@ transfer_error:
 		  SPI_UsrLog("\n No write support!");
 		  return ARM_DRIVER_ERROR_UNSUPPORTED;
 	 }
-	 if (flschip->unlock) {
+	 if (flschip->unlock && !is_unlocked) {
 		status = flschip->unlock(); // 
 		if (status) return status;
+		   else is_unlocked = true;
 		}
 	 
 	 SPI_UsrLog ("\n wr_addr -> 0x%05x   cnt -> 0x%03x", addr, cnt);
@@ -696,6 +696,12 @@ transfer_error:
   }
 
   status = ARM_DRIVER_OK;
+	
+	status = ReadStatusReg(CMD_READ_STATUS, &cmd[0]);
+  if (status != ARM_DRIVER_OK || (cmd[0] == 0xff)) {  //BUSY or  Chip not present
+		        SPI_UsrLog("\nspi_chip_write: StatusReg -> 0x%x, maybe chip disconected", cmd[0]);
+            return ARM_DRIVER_ERROR;
+          }
 
   num = 0U;
   buf = data;
@@ -1165,7 +1171,7 @@ static int32_t isErased (void) {
 	for (addr=0; addr<flschip->total_size*1024;) {
 		//if ((addr & 0x3fff)  == 0) BSP_LED_Toggle(LED3);
 		ReadData(addr, (uint32_t *)&buf[0], sizeof(buf));
-		status += memcmp(buf, buf_, sizeof(buf));
+		status = memcmp(buf, buf_, sizeof(buf));
 		//status += memcmp_(buf, 0xffffffff, sizeof(buf));
 		if (status) break;
 		addr += sizeof(buf)*4;
@@ -1241,16 +1247,23 @@ static int32_t isErased (void) {
 int32_t spi_erase_bulk (uint8_t cmd) {
   //uint8_t cmd[4];
   int32_t status = ARM_DRIVER_OK;
-	uint8_t buf[4];
+	uint8_t buf[4], stat;
 	volatile int32_t led_tgl=30;
 	
-	 
-	if (isErased() == 0) return ARM_DRIVER_OK; //no need execute erase
-	 
-	if (flschip->unlock) {  //(flschip->unlock == spi_disable_blockprotect)
-		status = flschip->unlock();//spi_disable_blockprotect(); // 
+	status = ReadStatusReg(CMD_READ_STATUS, &stat);  
+  if (status != ARM_DRIVER_OK || stat == 0xff) {  //BUSY or  Chip not present
+		SPI_UsrLog("\nspi_erase_bulk: StatusReg -> 0x%x, maybe chip disconected", stat);
+            return ARM_DRIVER_ERROR_STS_REG_FF;
+          }
+	
+  if (flschip->unlock && !is_unlocked) {
+		status = flschip->unlock(); // 
 		if (status) return status;
-		}
+		   else is_unlocked = true;
+		if (displ_blk_prot) displ_blk_prot = false;  // maybe delete
+		} 
+	
+	if (isErased() == 0) return ARM_DRIVER_OK; //no need execute erase	
 
   FlashStatus.busy  = 1U;
   FlashStatus.error = 0U;
@@ -1267,8 +1280,8 @@ int32_t spi_erase_bulk (uint8_t cmd) {
           if (status != ARM_DRIVER_OK) {
             break;
           }
-					if (led_tgl-- == 0) {LED_Toggle(); led_tgl = 10;}
-		      HAL_Delay(1);
+					if (led_tgl-- == 0) {LED_Toggle(); led_tgl = 2;} //10
+		      HAL_Delay(10);
           /* Check Flags Status register value */
           if ((buf[0] & 0x1U) != 1U) {
             FlashStatus.busy = 0U;
@@ -1280,7 +1293,7 @@ int32_t spi_erase_bulk (uint8_t cmd) {
  }
 	 if (isErased()){ 
 	   SPI_UsrLog ("\n Flash not erased!!!\n");
-		 return ARM_DRIVER_ERROR;
+		 return ARM_DRIVER_ERROR_NOT_BLANK;
 	 }
 	   else SPI_UsrLog ("\n Flash erased!!!, all 0xFF\n");
    LED_Off();
@@ -1340,6 +1353,11 @@ int32_t spi_erase_bulk_at45 (uint8_t cmd) {  //there cmd not used
 	uint8_t buf[4];
 	volatile int32_t led_tgl=30;
 	
+	status = ReadStatusReg(AT45DB_STATUS, &buf[0]);  
+  if (status != ARM_DRIVER_OK || buf[0] == 0xff) {  //BUSY or  Chip not present
+		SPI_UsrLog("\nspi_erase_bulk: StatusReg -> 0x%x, maybe chip disconected", buf[0]);
+            return ARM_DRIVER_ERROR_STS_REG_FF;
+          }
 	 
 	if (isErased() == 0) return ARM_DRIVER_OK; //no need execute erase
 	 
@@ -1358,8 +1376,8 @@ int32_t spi_erase_bulk_at45 (uint8_t cmd) {  //there cmd not used
           if (status != ARM_DRIVER_OK) {
             break;
           }
-					if (led_tgl-- == 0) {LED_Toggle(); led_tgl = 10;}
-		      HAL_Delay(1);
+					if (led_tgl-- == 0) {LED_Toggle(); led_tgl = 3;}
+		      HAL_Delay(10);
           /* Check Flags Status register value */
           if (buf[0] & AT45DB_READY) {
             FlashStatus.busy = 0U;

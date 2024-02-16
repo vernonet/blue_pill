@@ -58,12 +58,13 @@
 #define BUTTON_GPIO_PORT                GPIOB
 #define LED_PIN                         GPIO_PIN_13
 #define LED_GPIO_PORT                   GPIOC
-#define USB_DP_PORT                     GPIOA
-#define USB_DP_PIN                      GPIO_PIN_12
+#define USB_DP_PORT                     GPIOA        //GPIOB        GPIOA
+#define USB_DP_PIN                      GPIO_PIN_12  //GPIO_PIN_14  GPIO_PIN_12
 #define LED_Off()                       HAL_GPIO_WritePin(LED_GPIO_PORT, LED_PIN, GPIO_PIN_SET)
 #define LED_On()                        HAL_GPIO_WritePin(LED_GPIO_PORT, LED_PIN, GPIO_PIN_RESET)
 #define LED_Toggle()                    HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PIN)
 #define PB_GetState()                   HAL_GPIO_ReadPin(BUTTON_GPIO_PORT, BUTTON_PIN)
+#define CRC_BUFF_SZE                    0x100  //attention, the buffer size affects the result (STORAGE_BLK_SIZ)
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/

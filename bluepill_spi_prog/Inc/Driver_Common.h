@@ -56,6 +56,9 @@ typedef struct _ARM_DRIVER_VERSION {
 #define ARM_DRIVER_ERROR_UNSUPPORTED -4 ///< Operation not supported
 #define ARM_DRIVER_ERROR_PARAMETER   -5 ///< Parameter error
 #define ARM_DRIVER_ERROR_SPECIFIC    -6 ///< Start of driver specific errors 
+#define ARM_DRIVER_ERROR_BLK_PROT    -7 
+#define ARM_DRIVER_ERROR_STS_REG_FF  -8
+#define ARM_DRIVER_ERROR_NOT_BLANK   -9
 
 /**
 \brief General power states

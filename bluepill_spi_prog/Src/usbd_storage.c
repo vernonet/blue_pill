@@ -88,7 +88,7 @@ uint8_t flash_eraset = 0, temp=0,Wr_Protect, mod=0;
 uint8_t write_started =0;
 uint16_t block_num_cnt=0;
 //IWDG_HandleTypeDef hiwdg;
-extern uint8_t complet, error;
+extern uint8_t complet, error, error_sts;
 //TIM_HandleTypeDef htim6;
 extern uint8_t inter;
 volatile uint32_t  ttt=0;
@@ -96,6 +96,7 @@ extern __IO uint32_t CRCValue_nominal;
 bool backup_mode = false;  //backup firmware first
 extern uint32_t spi_speed;
 ARM_SPI_STATUS  sts;
+
 
 uint8_t FAT[STORAGE_BLK_SIZ*26]  __attribute__ ((aligned (4))) = {0};   //__attribute__((section(".ARM.__at_0x20010e39")));//
 
@@ -116,12 +117,12 @@ FATFS  * fs;//__attribute__ ((aligned (4)));
 	  0xF0, 0xFF, 0xFF, 0x00, 
 	  0x00, 0x00, 0x55, 0xAA 
 };
- unsigned char Label_disk[32] = {
+ const unsigned char Label_disk[32] = {
     0x53, 0x50, 0x49, 0x2D, 0x50, 0x52, 0x4F, 0x47, 0x20, 0x20, 0x20, 0x08, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x53, 0xA8, 0x4E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 };
  
-unsigned char backup_fil[28] = {
+const unsigned char backup_fil[28] = {
     0x46, 0x49, 0x52, 0x4D, 0x57, 0x41, 0x52, 0x45, 0x42, 0x49, 0x4E, 0x20, 0x18, 0x7A, 0x62, 0x7F,
     0xB6, 0x4E, 0xB6, 0x4E, 0x00, 0x00, 0x63, 0x7F, 0xB6, 0x4E, 0x02, 0x00 
 };
@@ -370,7 +371,7 @@ int8_t Sector_Erase(void)
 		ret |= Write_LL((uint32_t)&FAT[0]+0x01FC                                 , &boot_sec[sizeof(boot_sec)- 4*1], 4*1);	
 		ret |= Write_LL((uint32_t)&FAT[0]+(STORAGE_BLK_SIZ*1)                    , &boot_sec[sizeof(boot_sec)- 4*2], 4*1);  //+0x0200
 		ret |= Write_LL((uint32_t)&FAT[0]+(STORAGE_BLK_SIZ*(SECTOR_PER_FAT*1+1)) , &boot_sec[sizeof(boot_sec)- 4*2], 4*1);  //+0x1000
-		ret |= Write_LL((uint32_t)&FAT[0]+(STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK)    , &Label_disk[0], sizeof(Label_disk));	    //+0x1E00
+		ret |= Write_LL((uint32_t)&FAT[0]+(STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK)    , (uint8_t *)&Label_disk[0], sizeof(Label_disk));	    //+0x1E00
 	
 	  if (dsk_lbl) memcpy(&FAT[0]+STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK+4, dsk_lbl, 6);
 	  if (backup_mode){ 
@@ -397,16 +398,21 @@ int8_t Sector_Erase(void)
   * @retval Status (0 : Ok / 1 : Error)
   */
 static int8_t Write_LL(uint32_t  dest, uint8_t * src, uint16_t len)
-{	                   
-	//if the file size is not a multiple of the sector size
+{	   
+  int8_t stat;	
+	uint32_t * src32 = (uint32_t*)src;
+	
+	//if the file size is not a multiple of the sector size, last block
 	if ((modulo) && ((dest - FAT_OFFSET) == (file_size-modulo))) {	
-		len = modulo; 
+		//len = modulo;                   //chunk
+		memset(src+modulo, FLASH_ERASED_VALUE, len-modulo);
 	}
 	
 	//if writing data
 	if (dest < (flschip->total_size*1024+FAT_OFFSET))	{   
 		  if (backup_mode) return 0;
-			if (ProgramData (dest - FAT_OFFSET, src, len) != ARM_DRIVER_OK) return ARM_DRIVER_ERROR;							
+		  stat = (int8_t)ProgramData (dest - FAT_OFFSET, src32, len);
+			if (stat != ARM_DRIVER_OK) return stat;							
 	}				 				 			 
 	 //else writing  FAT
 	 else  if ((dest <= ((uint32_t)&FAT[0] + sizeof(FAT))) && (dest >= ((uint32_t)&FAT[0]))) memcpy ((uint8_t*)dest, src, len);
@@ -427,6 +433,7 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t * buf, uint32_t blk_addr,
                      uint16_t blk_len)
 {                       
   uint32_t adr=0;
+	int8_t stat;
 
 	
   switch (lun)
@@ -437,10 +444,10 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t * buf, uint32_t blk_addr,
 			 if (blk_addr >= FAT_FILE_DATA_BLK) {                             //0x3a00 file body
 				 if ((modulo)&&(blk_addr == (FAT_FILE_DATA_BLK+file_size/STORAGE_BLK_SIZ))) {
 					 //last block && not aligned 
-					 CRCValue_nominal = CalcCRC32(buf, modulo, CRCValue_nominal);                       
+					 CRCValue_nominal = CalcCRC32_n(buf, modulo, CRCValue_nominal, CRC_BUFF_SZE);                       
 					 }
 				   //standart
-					 else CRCValue_nominal = CalcCRC32(buf, blk_len*STORAGE_BLK_SIZ, CRCValue_nominal);							
+					 else CRCValue_nominal = CalcCRC32_n(buf, blk_len*STORAGE_BLK_SIZ, CRCValue_nominal, CRC_BUFF_SZE);							
 				 }
          if (blk_addr < FAT_FILE_DATA_BLK) {
            if (blk_addr == FAT_DIRECTORY_BLK && !(backup_mode))  {
@@ -470,9 +477,15 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t * buf, uint32_t blk_addr,
 					  else adr = FLASH_DISK_START_ADDRESS;                              //else writing data
 				//if block number >FAT_DIRECTORY_BLK & <FAT_FILE_DATA_BLK -> skip writing 	 
 				if (!(blk_addr < FAT_FILE_DATA_BLK & blk_addr > FAT_DIRECTORY_BLK)){  
-				if (Write_LL((adr) +blk_addr*STORAGE_BLK_SIZ, buf, blk_len*STORAGE_BLK_SIZ) == HAL_ERROR) 
+					stat = Write_LL((adr) +blk_addr*STORAGE_BLK_SIZ, buf, blk_len*STORAGE_BLK_SIZ);
+				  if (stat)        
 							 { 
-								Error_Handler();
+								error_sts = stat;
+								USBD_UsrLog("\n\r ERROR -> %s %d", __FILE__, __LINE__); 
+								USBD_UsrLog("\n\r ERROR Write_LL -> %d", error_sts); 
+					      //complet = 1; 
+								//return -1; 
+								//Error_Handler();
 							 }	 
 				}
 				
