@@ -65,6 +65,13 @@
 #define FAT_OFFSET                       FAT_FILE_DATA_BLK*STORAGE_BLK_SIZ  //0A 0x1400   1B 3600
 #define END_OF_CHAIN                     (0xfff)
 
+typedef enum {
+  BACKUP   = 0,
+  VERIFY   = 1,
+  PROG     = 2,
+	INFO     = 3,
+}Media_mode;
+
 
 
 #define FLASH_DISK_START_ADDRESS              0                  

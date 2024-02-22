@@ -94,6 +94,7 @@ extern uint8_t inter;
 volatile uint32_t  ttt=0;
 extern __IO uint32_t CRCValue_nominal;
 bool backup_mode = false;  //backup firmware first
+Media_mode device_mode;
 extern uint32_t spi_speed;
 ARM_SPI_STATUS  sts;
 
@@ -309,6 +310,7 @@ int8_t STORAGE_IsReady(uint8_t lun)
   */
 int8_t STORAGE_IsWriteProtected(uint8_t lun)
 {
+	USBD_UsrLog("\n\r IsWriteProtected -> %d ", Wr_Protect);
 	if (Wr_Protect) return -1;
     else return 0;
 }
@@ -331,7 +333,7 @@ int8_t STORAGE_Read(uint8_t lun, uint8_t * buf, uint32_t blk_addr,
   {
     case 0:
 				//for backup firmware mode
-				if (blk_addr>=FAT_FILE_DATA_BLK && backup_mode) {
+				if (blk_addr>=FAT_FILE_DATA_BLK && device_mode == BACKUP) {
 					if (flschip)  ReadData((blk_addr-FAT_FILE_DATA_BLK)*STORAGE_BLK_SIZ, buf32, STORAGE_BLK_SIZ*blk_len);
 					   else memset(buf, 0, STORAGE_BLK_SIZ*blk_len);
 				}
@@ -354,7 +356,7 @@ int8_t STORAGE_Read(uint8_t lun, uint8_t * buf, uint32_t blk_addr,
 int8_t Sector_Erase(void)
 {		
         if  (EraseChip ()) return 1;
-				flash_eraset = 1; 
+				//flash_eraset = 1; 
 	      //printf ("\n Sector erase run");
         //MX_TIM6_Init();					
 			
@@ -374,7 +376,7 @@ int8_t Sector_Erase(void)
 		ret |= Write_LL((uint32_t)&FAT[0]+(STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK)    , (uint8_t *)&Label_disk[0], sizeof(Label_disk));	    //+0x1E00
 	
 	  if (dsk_lbl) memcpy(&FAT[0]+STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK+4, dsk_lbl, 6);
-	  if (backup_mode){ 
+	  if (device_mode == BACKUP || device_mode == INFO){ 
 			//memcpy(&FAT[0]+STORAGE_BLK_SIZ*FAT_DIRECTORY_BLK+4, "BACKUP", 6);		
 			if (create_fs(fil_str)) return -1; 
 			//fatfs вешает spi
@@ -409,8 +411,8 @@ static int8_t Write_LL(uint32_t  dest, uint8_t * src, uint16_t len)
 	}
 	
 	//if writing data
-	if (dest < (flschip->total_size*1024+FAT_OFFSET))	{   
-		  if (backup_mode) return 0;
+	if (dest < (flschip->total_size*1024+FAT_OFFSET))	{     
+		  if (device_mode == BACKUP || device_mode == VERIFY || device_mode == INFO) return ARM_DRIVER_OK;
 		  stat = (int8_t)ProgramData (dest - FAT_OFFSET, src32, len);
 			if (stat != ARM_DRIVER_OK) return stat;							
 	}				 				 			 
@@ -450,7 +452,7 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t * buf, uint32_t blk_addr,
 					 else CRCValue_nominal = CalcCRC32_n(buf, blk_len*STORAGE_BLK_SIZ, CRCValue_nominal, CRC_BUFF_SZE);							
 				 }
          if (blk_addr < FAT_FILE_DATA_BLK) {
-           if (blk_addr == FAT_DIRECTORY_BLK && !(backup_mode))  {
+           if (blk_addr == FAT_DIRECTORY_BLK && (device_mode == PROG || device_mode == VERIFY))  {
 						 //0x1C- file_size offset 
 						 if (*(uint32_t*)(buf+0x1C+0x20)) {						 
 							 file_size = 0;

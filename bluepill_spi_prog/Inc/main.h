@@ -58,6 +58,8 @@
 #define BUTTON_GPIO_PORT                GPIOB
 #define LED_PIN                         GPIO_PIN_13
 #define LED_GPIO_PORT                   GPIOC
+//"USB_DP_PORT GPIOA USB_DP_PIN GPIO_PIN_12" in original bluepill
+//"USB_DP_PORT GPIOB USB_DP_PIN GPIO_PIN_14" in my modified board 1 pcs
 #define USB_DP_PORT                     GPIOA        //GPIOB        GPIOA
 #define USB_DP_PIN                      GPIO_PIN_12  //GPIO_PIN_14  GPIO_PIN_12
 #define LED_Off()                       HAL_GPIO_WritePin(LED_GPIO_PORT, LED_PIN, GPIO_PIN_SET)

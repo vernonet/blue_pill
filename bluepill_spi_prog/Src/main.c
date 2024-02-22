@@ -68,20 +68,18 @@ SPI_HandleTypeDef hspi1;
 uint8_t status, st;
 __IO uint32_t CRCValue_actual = 0;  // calculated after write flash
 __IO uint32_t CRCValue_nominal = 0; // calculated before write flash
-//uint8_t crc_buf[0x200] __attribute__((aligned(4)));
+// uint8_t crc_buf[0x200] __attribute__((aligned(4)));
 uint8_t *crc_buf;
 extern uint8_t Wr_Protect;
 volatile uint8_t complet = 0, error = 0, error_sts = 0;
 extern int32_t file_size;
 volatile uint32_t blink = 2;
-extern bool backup_mode; // backup firmware first
 extern const struct flashchip *flschip;
 extern unsigned char boot_sec[];
 extern const struct flashchip flashchips[];
 extern JEDEC_ID jdc_id_;
-const char build_date[] = "Compile date "__DATE__
-                          " " __TIME__;
-
+const char build_date[] = "Compile date "__DATE__" " __TIME__;
+extern Media_mode device_mode;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -90,7 +88,11 @@ static void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
+bool process_complete(Media_mode mde);
+bool prepare_device(Media_mode mde);
+void key_led(uint32_t blk);
+void set_msd_size(uint32_t size_in_kb);
+const char* getModeName(Media_mode mode); 
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -106,7 +108,8 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
   int32_t stat;
-	uint8_t str_buf[100];
+  // uint8_t str_buf[100];
+  uint16_t led_delay;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -133,155 +136,37 @@ int main(void)
     MX_GPIO_Init();
     if (flschip)
     {
-      // boot_sec[20] = (flschip->total_size*1024/STORAGE_BLK_SIZ) >> 8;                       //NumberOfSectors16
-      boot_sec[32] = ((flschip->total_size * 1024 / STORAGE_BLK_SIZ) & 0xFF) + FAT_FILE_DATA_BLK; // NumberOfSectors32
-      boot_sec[33] = ((flschip->total_size * 1024 / STORAGE_BLK_SIZ) >> 8) & 0xFF;                // NumberOfSectors32
-      boot_sec[34] = ((flschip->total_size * 1024 / STORAGE_BLK_SIZ) >> 16) & 0xFF;               // NumberOfSectors32
-      //		 while (1){
-      //			if (blink-- == 0) {LED_Toggle(); blink = 40;}
-      //		  HAL_Delay(10);
-      //			if (PB_GetState() == 0) {LED_Off(); break; }
-      //		  }
-
       HAL_Delay(800);
-      backup_mode = true;
-      if (Prepare_FAT(flschip->name, "BACKUP"))
-        Error_Handler(); // backup mode
-      /* USER CODE END SysInit */
+      set_msd_size(flschip->total_size);
+      prepare_device(BACKUP);
+      key_led(40);
+      if (prepare_device(VERIFY))
+        key_led(8); // error present
+      else
+        key_led(40); // no error
+      if (prepare_device(PROG))
+        Error_Handler(); // error present
 
-      /* Initialize all configured peripherals */
-      HAL_Delay(50);
-      MX_USB_DEVICE_Init();
-      HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); // USB DP PULLUP
-      /* USER CODE BEGIN 2 */
       while (1)
       {
-        if (blink-- == 0)
-        {
-          LED_Toggle();
-          blink = 40;
-        }
-        HAL_Delay(10);
-        if (SWPressed() == 1)
-        {
-          LED_Off();
-          break;
-        }
+        LED_Toggle(); // no error
+        HAL_Delay(500);
       }
 
-      HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_RESET); // USB DP PULLDOWN
-      MX_USB_DEVICE_DeInit();
-      backup_mode = false;
-      HAL_Delay(100);
-      stat = EraseChip();
-      if (stat)
-      {
-        // flash not erased
-        backup_mode = true;
-        if (stat == ARM_DRIVER_ERROR_BLK_PROT)
-          Prepare_FAT("Disable block ptotections error", "ERROR ");
-        else if (stat == ARM_DRIVER_ERROR_STS_REG_FF)
-          Prepare_FAT("Chip erase error statusReg 0xFF", "ERROR ");
-        else if (stat == ARM_DRIVER_ERROR_NOT_BLANK)
-          Prepare_FAT("Chip not blank after erase", "ERROR ");
-        else
-          Prepare_FAT("Chip erase error", "ERROR ");
-
-        HAL_Delay(50);
-        MX_USB_DEVICE_Init();
-        HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); // USB DP PULLUP
-        Error_Handler();
-      }
-      LED_Off();
-      HAL_Delay(100);
-      if (Prepare_FAT(NULL, "PROG  "))
-        Error_Handler(); // update mode
-      MX_USB_DEVICE_Init();
-      HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); // USB DP PULLUP
       /* USER CODE END 2 */
 
       /* Infinite loop */
       /* USER CODE BEGIN WHILE */
-      while (1)
-      {
 
-        /* USER CODE END WHILE */
-        if (complet) // if the write is completed
-        {
-          HAL_Delay(10);
-          HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_RESET); // USB DP PULLDOWN
-          MX_USB_DEVICE_DeInit();
-					crc_buf = malloc(CRC_BUFF_SZE);
-          if ((file_size > STORAGE_BLK_SIZ) && (file_size <= (flschip->total_size * 1024)))
-          {
-            volatile uint32_t adr = 0, len = 0;
-            while (adr < file_size)
-            {
-              if (file_size - adr > (sizeof(crc_buf[0]) * CRC_BUFF_SZE))
-                len = sizeof(crc_buf[0]) * CRC_BUFF_SZE;
-              else
-                len = file_size - adr;
-              ReadData(adr, (uint32_t*)crc_buf, len); // sizeof(crc_buf)		
-              CRCValue_actual = CalcCRC32(crc_buf, len, CRCValue_actual);
-              adr += len;
-            }
-            free(crc_buf);
-            if ((error_sts) || !(CRCValue_nominal == CRCValue_actual) || (error))
-            {
-              // error CRC or any other error
-              backup_mode = true;
-              if (error_sts)
-                Prepare_FAT("Error during programming", "ERROR ");
-              else if (!(CRCValue_nominal == CRCValue_actual))
-                Prepare_FAT("CRC error after programming", "ERROR ");
-              else
-                Prepare_FAT("Error during programming", "ERROR ");
-              HAL_Delay(50);
-              MX_USB_DEVICE_Init();
-              HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); // USB DP PULLUP
-              Error_Handler();
-            }
-            else
-            {
-							// no error, all ok!
-							backup_mode = true;
-							Prepare_FAT("Programming completed successfully", "GOOD ");
-              HAL_Delay(50);
-              MX_USB_DEVICE_Init();
-              HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); // USB DP PULLUP
-              while (1)
-              { 
-                LED_Toggle(); // no error
-                HAL_Delay(500);
-              }
-            }
-          }
-          else
-            Error_Handler(); // file size error
-        }
-      }
+      /* USER CODE END WHILE */
     }
     else
-    { // flash not identified  or wrong connection
+    {
+      // flash not identified  or wrong connection
       HAL_Delay(800);
       // flschip = flash_id_to_entry(GENERIC_MANUF_ID, GENERIC_DEVICE_ID);
-      boot_sec[32] = ((1024 * 1024 / STORAGE_BLK_SIZ) & 0xFF) + FAT_FILE_DATA_BLK; // NumberOfSectors32
-      boot_sec[33] = ((1024 * 1024 / STORAGE_BLK_SIZ) >> 8) & 0xFF;                // NumberOfSectors32
-      boot_sec[34] = ((1024 * 1024 / STORAGE_BLK_SIZ) >> 16) & 0xFF;               // NumberOfSectors32
-      backup_mode = true;
-      // if the chip is not recognized, but the ID is read
-      if (!(jdc_id_.man_id == 0xFF && (jdc_id_.dev_id == 0xFFFF | jdc_id_.dev_id == 0xFF | jdc_id_.dev_id == 0x00)))
-      {
-        // use crc_buf for string buffer
-        sprintf((char *)&str_buf[0], "unknown SPI chip manId 0x%X devId 0x%X", jdc_id_.man_id, jdc_id_.dev_id);
-        Prepare_FAT((char *)&str_buf[0], "ERROR ");
-      }
-      // if the chip is not recognized and the ID is not readable
-      else
-        Prepare_FAT("unknown SPI chip or wrong connections", "ERROR ");
-      HAL_Delay(50);
-      MX_USB_DEVICE_Init();
-      HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); // USB DP PULLUP
+      set_msd_size(1024);
+      prepare_device(INFO);
       Error_Handler();
     }
   }
@@ -397,6 +282,224 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+const char* getModeName(Media_mode mode) 
+{
+   switch (mode) 
+   {
+      case BACKUP: return "BACKUP";
+      case VERIFY: return "VERIFY";
+		  case PROG:   return "PROG";
+		  case INFO:   return "INFO";    
+   }
+}
+
+
+void set_msd_size(uint32_t size_in_kb)
+{
+  boot_sec[32] = ((size_in_kb * 1024 / STORAGE_BLK_SIZ) & 0xFF) + FAT_FILE_DATA_BLK; // NumberOfSectors32
+  boot_sec[33] = ((size_in_kb * 1024 / STORAGE_BLK_SIZ) >> 8) & 0xFF;                // NumberOfSectors32
+  boot_sec[34] = ((size_in_kb * 1024 / STORAGE_BLK_SIZ) >> 16) & 0xFF;               // NumberOfSectors32
+}
+
+void key_led(uint32_t blk)
+{
+  uint32_t blink_ = blk;
+
+  while (1)
+  {
+    if (blink_-- == 0)
+    {
+      LED_Toggle();
+      blink_ = blk; // 40;
+    }
+    HAL_Delay(10);
+    if (SWPressed() == 1)
+    {
+      LED_Off();
+      break;
+    }
+  }
+}
+
+//* @retval Status (0 : Ok / 1 : Error)
+bool prepare_device(Media_mode mde)
+{
+  int32_t stat = 0;
+  uint8_t str_buf[100];
+  int8_t sts;
+
+  complet = 0;
+  if (mde != BACKUP && mde != INFO)
+  {
+    HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_RESET); // USB DP PULLDOWN
+    MX_USB_DEVICE_DeInit();
+  }
+
+  HAL_Delay(100);
+  device_mode = mde;
+	USBD_UsrLog("\n\r device_mode -> %s", getModeName(mde));
+
+  switch (mde)
+  {
+  case BACKUP:
+    Wr_Protect = 1;
+    if (Prepare_FAT(flschip->name, "BACKUP"))
+      Error_Handler();
+    break;
+  case VERIFY:
+    Wr_Protect = 0;
+    if (Prepare_FAT(NULL, "VERIFY"))
+      Error_Handler();
+    break;
+  case PROG:
+    Wr_Protect = 0;
+    stat = EraseChip();
+    if (stat)
+    {
+      // flash not erased
+      device_mode = INFO;
+			USBD_UsrLog("\n\r device_mode -> %s", getModeName(device_mode));
+
+      if (stat == ARM_DRIVER_ERROR_BLK_PROT)
+      {
+        if (Prepare_FAT("Disable block ptotections error", "ERROR "))
+          Error_Handler();
+      }
+      else if (stat == ARM_DRIVER_ERROR_STS_REG_FF)
+      {
+        if (Prepare_FAT("Chip erase error statusReg 0xFF", "ERROR "))
+          Error_Handler();
+      }
+      else if (stat == ARM_DRIVER_ERROR_NOT_BLANK)
+      {
+        if (Prepare_FAT("Chip not blank after erase", "ERROR "))
+          Error_Handler();
+      }
+      else
+      {
+        if (Prepare_FAT("Chip erase error", "ERROR "))
+          Error_Handler();
+      }
+    }
+    else
+    {
+      if (Prepare_FAT(NULL, "PROG  "))
+        Error_Handler(); // flash erased OK!
+    }
+    break;
+  case INFO:
+    Wr_Protect = 1;
+    if (!(jdc_id_.man_id == 0xFF && (jdc_id_.dev_id == 0xFFFF | jdc_id_.dev_id == 0xFF | jdc_id_.dev_id == 0x00)))
+    {
+      sprintf((char *)&str_buf[0], "unknown SPI chip manId 0x%X devId 0x%X", jdc_id_.man_id, jdc_id_.dev_id);
+      if (Prepare_FAT((char *)&str_buf[0], "ERROR "))
+        Error_Handler();
+    }
+    // if the chip is not recognized and the ID is not readable
+    else
+    {
+      if (Prepare_FAT("unknown SPI chip or wrong connections", "ERROR "))
+        Error_Handler();
+    }
+    break;
+  default:
+    break;
+  }
+
+  /* Initialize all configured peripherals */
+  HAL_Delay(50);
+  MX_USB_DEVICE_Init();
+  HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); // USB DP PULLUP
+
+  if (stat)
+    return 1;
+
+  if (mde == VERIFY || mde == PROG)
+    return (process_complete(mde));
+
+  return 0;
+}
+
+//* @retval Status (0 : Ok / 1 : Error)
+bool process_complete(Media_mode mde)
+{
+  int8_t sts = 0;
+
+  CRCValue_actual = 0;
+  CRCValue_nominal = 0;
+  HAL_Delay(100);
+  while (1)
+  {
+    HAL_Delay(10);
+    if (SWPressed() == 1)
+      return 0;
+
+    if (complet) // if the write is completed
+    {
+      HAL_Delay(10);
+      HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_RESET); // USB DP PULLDOWN
+      MX_USB_DEVICE_DeInit();
+      crc_buf = malloc(CRC_BUFF_SZE);
+      if ((file_size > STORAGE_BLK_SIZ) && (file_size <= (flschip->total_size * 1024)))
+      {
+        volatile uint32_t adr = 0, len = 0;
+        while (adr < file_size)
+        {
+          if (file_size - adr > (sizeof(crc_buf[0]) * CRC_BUFF_SZE))
+            len = sizeof(crc_buf[0]) * CRC_BUFF_SZE;
+          else
+            len = file_size - adr;
+          ReadData(adr, (uint32_t *)crc_buf, len); // sizeof(crc_buf)
+          CRCValue_actual = CalcCRC32(crc_buf, len, CRCValue_actual);
+          adr += len;
+        }
+        free(crc_buf);
+        if ((error_sts) || !(CRCValue_nominal == CRCValue_actual) || (error))
+        {
+          // error CRC or any other error
+          device_mode = INFO;
+					USBD_UsrLog("\n\r device_mode -> %s", getModeName(device_mode));
+          if (error_sts)
+            sts = Prepare_FAT("Error during programming", "ERROR ");
+          else if (!(CRCValue_nominal == CRCValue_actual))
+          {
+            if (mde == VERIFY)
+              sts = Prepare_FAT("CRC error after verifing", "ERROR ");
+            else
+              sts = Prepare_FAT("CRC error after programming", "ERROR ");
+          }
+          else
+            sts = Prepare_FAT("Error during programming-verifing", "ERROR ");
+          if (sts)
+            Error_Handler(); // error on prepare fat
+          HAL_Delay(50);
+          MX_USB_DEVICE_Init();
+          HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); // USB DP PULLUP
+          return 1;                                                 // Error_Handler();
+        }
+        else
+        {
+          // no error, all ok!
+          device_mode = INFO;
+					USBD_UsrLog("\n\r device_mode -> %s", getModeName(device_mode));
+          if (mde == PROG)
+            sts = Prepare_FAT("Programming completed successfully", "GOOD ");
+          else if (mde == VERIFY)
+            sts = Prepare_FAT("Verifing completed successfully", "GOOD ");
+          if (sts)
+            Error_Handler(); // error on prepare fat
+          HAL_Delay(50);
+          MX_USB_DEVICE_Init();
+          HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_SET); // USB DP PULLUP
+          return 0;
+        }
+      }
+      else
+        Error_Handler(); // file size error
+    }
+  }
+}
 
 /* USER CODE END 4 */
 
