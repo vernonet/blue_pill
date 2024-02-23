@@ -136,6 +136,9 @@ int main(void)
     MX_GPIO_Init();
     if (flschip)
     {
+			if (flschip->voltage.max < 3000) {
+				SPI_UsrLog("\n Warning, the max Vcc of the chip is %d mV", flschip->voltage.max);
+			}
       HAL_Delay(800);
       set_msd_size(flschip->total_size);
       prepare_device(BACKUP);

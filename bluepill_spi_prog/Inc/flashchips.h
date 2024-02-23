@@ -442,16 +442,31 @@
  */
 #define SST_ID			0xBF	/* SST */
 #define SST_SST25LF020_REMS	0x43	/* REMS or RES opcode */
-#define SST_SST25VF040_REMS	0x44	/* REMS or RES opcode, same as SST25LF040A */
-#define SST_SST25VF512_REMS	0x48	/* REMS or RES opcode, same as SST25VF512A */
-#define SST_SST25VF010_REMS	0x49	/* REMS or RES opcode, same as SST25VF010A */
-#define SST_SST25VF020_REMS	0x43	/* REMS or RES opcode, same as SST25LF020A */
-
 #define SST_SST25WF512		0x2501
 #define SST_SST25WF010		0x2502
 #define SST_SST25WF020		0x2503
 #define SST_SST25WF040		0x2504
 #define SST_SST25WF080		0x2505
+/* There exist some successors to members of the SST25WF family with alphabetic suffixes. Their datasheets show
+ * a 4 byte long response w/o a vendor ID. The first byte is 0x62 that is actually Sanyo's and might be due to
+ * a collaboration in the mid 2000ies between Sanyo and SST. */
+#define SST_SST25WF020A		0x1612
+#define SST_SST25WF040B		0x1613
+#define SST_SST25WF080B		0x1614
+#define SST_SST25VF512_REMS	0x48	/* REMS or RES opcode, same as SST25VF512A */
+#define SST_SST25VF010_REMS	0x49	/* REMS or RES opcode, same as SST25VF010A */
+#define SST_SST25VF020_REMS	0x43	/* REMS or RES opcode, same as SST25LF020A */
+#define SST_SST25VF020B		0x258C
+#define SST_SST25VF040_REMS	0x44	/* REMS or RES opcode, same as SST25LF040A */
+#define SST_SST25VF040B		0x258D
+#define SST_SST25VF040B_REMS	0x8D	/* REMS or RES opcode */
+#define SST_SST25VF080_REMS	0x80	/* REMS or RES opcode, same as SST25LF080A */
+#define SST_SST25VF080B		0x258E
+#define SST_SST25VF080B_REMS	0x8E	/* REMS or RES opcode */
+#define SST_SST25VF016B		0x2541
+#define SST_SST25VF032B		0x254A
+#define SST_SST25VF032B_REMS	0x4A	/* REMS or RES opcode */
+#define SST_SST25VF064C		0x254B
 
 
 /*

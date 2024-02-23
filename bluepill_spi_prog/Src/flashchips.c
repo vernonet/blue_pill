@@ -6581,36 +6581,117 @@ const struct  flashchip  flashchips[]  =  {
 		.voltage	= {3000, 3600},
 	},
 
-//	{
-//		.vendor		= "SST",
-//		.name		= "SST25LF080A",
-//		.bustype	= BUS_SPI,
-//		.manufacture_id	= SST_ID,
-//		.model_id	= SST_SST25VF080_REMS,
-//		.total_size	= 1024,
-//		.page_size	= 256,
-//		.feature_bits	= FEATURE_UNBOUND_READ,
+	{
+		.vendor		= "SST",
+		.name		= "SST25LF080A",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= SST_ID,
+		.model_id	= SST_SST25VF080_REMS,
+		.total_size	= 1024,
+		.page_size	= 256,
+		.feature_bits	= FEATURE_WRSR_EWSR | FEATURE_WRSR_WREN,
+		//.tested		= TEST_UNTESTED,
+		//.probe		= probe_spi_res2,
+		//.probe_timing	= TIMING_ZERO,
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE				
+				.eraseblocks = { {4 * 1024, 256} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {32 * 1024, 32} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+#endif				
+				.eraseblocks = { {1024 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			},
+		},
+		.unlock		= spi_disable_blockprotect,
+		.write		= spi_chip_write_1, /* AAI supported, but opcode is 0xAF */
+		.read		= spi_chip_read,
+		.erase    = spi_erase_bulk,
+		.voltage	= {3000, 3600},
+	},
+	
+
+	{
+		.vendor		= "SST",
+		.name		= "SST25WF040B",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= SANYO_ID, /* See flashchips.h */
+		.model_id	= SST_SST25WF040B,
+		.total_size	= 512,
+		.page_size	= 256,
+		.feature_bits	= FEATURE_WRSR_WREN,
 //		.tested		= TEST_UNTESTED,
-//		.probe		= probe_spi_res2,
+//		.probe		= PROBE_SPI_RDID,
 //		.probe_timing	= TIMING_ZERO,
-//		.block_erasers	=
-//		{
-//			{
-//				.eraseblocks = { {4 * 1024, 256} },
-//				.block_erase = SPI_BLOCK_ERASE_20,
-//			}, {
-//				.eraseblocks = { {32 * 1024, 32} },
-//				.block_erase = SPI_BLOCK_ERASE_52,
-//			}, {
-//				.eraseblocks = { {1024 * 1024, 1} },
-//				.block_erase = SPI_BLOCK_ERASE_60,
-//			},
-//		},
-//		.unlock		= spi_disable_blockprotect,
-//		.write		= spi_chip_write_1, /* AAI supported, but opcode is 0xAF */
-//		.read		= spi_chip_read,
-//		.voltage	= {3000, 3600},
-//	},
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE				
+				.eraseblocks = { {4 * 1024, 128} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {64 * 1024, 8} },
+				.block_erase = SPI_BLOCK_ERASE_D8,
+			}, {
+				.eraseblocks = { {512 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			}, {
+#endif				
+				.eraseblocks = { {512 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_C7,
+			},
+		},
+		.unlock		= spi_disable_blockprotect_bp2_srwd,
+		.write		= spi_chip_write_256,
+		.read		= spi_chip_read, /* Fast read (0x0B), dual O (0x3B), dual I/O read (0xBB) supported */
+		.erase    = spi_erase_bulk,		
+		.voltage	= {1650, 1950},
+	},
+	
+	{
+		.vendor		= "SST",
+		.name		= "SST25WF080B",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= SANYO_ID, /* See flashchips.h */
+		.model_id	= SST_SST25WF080B,
+		.total_size	= 1024,
+		.page_size	= 256,
+		.feature_bits	= FEATURE_WRSR_WREN,
+//		.tested		= TEST_OK_PREW,
+//		.probe		= PROBE_SPI_RDID,
+//		.probe_timing	= TIMING_ZERO,
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE				
+				.eraseblocks = { {4 * 1024, 256} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {64 * 1024, 16} },
+				.block_erase = SPI_BLOCK_ERASE_D8,
+			}, {
+				.eraseblocks = { {1024 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			}, {
+#endif				
+				.eraseblocks = { {1024 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_C7,
+			},
+		},
+		.unlock		= spi_disable_blockprotect_bp2_srwd,
+		.write		= spi_chip_write_256,
+		.read		= spi_chip_read, /* Fast read (0x0B), dual O (0x3B), dual I/O read (0xBB) supported */
+		.erase    = spi_erase_bulk,		
+		.voltage	= {1650, 1950},
+	},
+
+
+
 
 //	{
 //		.vendor		= "SST",
@@ -6697,35 +6778,115 @@ const struct  flashchip  flashchips[]  =  {
 //		.read		= spi_chip_read,
 //	},
 
-//	{
-//		.vendor		= "SST",
-//		.name		= "SST25VF010.REMS",
-//		.bustype	= BUS_SPI,
-//		.manufacture_id	= SST_ID,
-//		.model_id	= SST_SST25VF010_REMS,
-//		.total_size	= 128,
-//		.page_size	= 256,
-//		.feature_bits	= FEATURE_UNBOUND_READ,
-//		.tested		= TEST_OK_PREWU,
-//		.probe		= probe_spi_rems,
+{
+		.vendor		= "SST",
+		.name		= "SST25VF010(A)",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= SST_ID,
+		.model_id	= SST_SST25VF010_REMS,
+		.total_size	= 128,
+		.page_size	= 256,
+		.feature_bits	= FEATURE_WRSR_EWSR,
+//		.tested		= TEST_OK_PREW,
+//		.probe		= PROBE_SPI_REMS,
 //		.probe_timing	= TIMING_ZERO,
-//		.block_erasers	=
-//		{
-//			{
-//				.eraseblocks = { {4 * 1024, 32} },
-//				.block_erase = SPI_BLOCK_ERASE_20,
-//			}, {
-//				.eraseblocks = { {32 * 1024, 4} },
-//				.block_erase = SPI_BLOCK_ERASE_52,
-//			}, {
-//				.eraseblocks = { {128 * 1024, 1} },
-//				.block_erase = SPI_BLOCK_ERASE_60,
-//			},
-//		},
-//		.unlock		= spi_disable_blockprotect,
-//		.write		= spi_chip_write_1,
-//		.read		= spi_chip_read,
-//	},
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE					
+				.eraseblocks = { {4 * 1024, 32} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {32 * 1024, 4} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+				.eraseblocks = { {32 * 1024, 4} },
+				.block_erase = SPI_BLOCK_ERASE_D8, /* Supported by SST25VF010A only */
+			}, {
+				.eraseblocks = { {128 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			}, {
+#endif				
+				.eraseblocks = { {128 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_C7, /* Supported by SST25VF010A only */
+			},
+		},
+		.unlock		= spi_disable_blockprotect,
+		.write		= spi_chip_write_1, /* AAI supported, but opcode is 0xAF */
+		.read		= spi_chip_read, /* Fast read (0x0B) supported by SST25VF010A only */
+		.erase    = spi_erase_bulk,	
+		.voltage	= {2700, 3600},
+	},
+
+		{
+		.vendor		= "SST",
+		.name		= "SST25VF020",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= SST_ID,
+		.model_id	= SST_SST25VF020_REMS,
+		.total_size	= 256,
+		.page_size	= 256,
+		.feature_bits	= FEATURE_WRSR_EWSR,
+//		.tested		= TEST_UNTESTED,
+//		.probe		= PROBE_SPI_REMS,
+//		.probe_timing	= TIMING_ZERO,
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE					
+				.eraseblocks = { {4 * 1024, 64} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {32 * 1024, 8} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+#endif				
+				.eraseblocks = { {256 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			},
+		},
+		.unlock		= spi_disable_blockprotect,
+		.write		= spi_chip_write_1, /* AAI supported, but opcode is 0xAF */
+		.read		= spi_chip_read, /* Fast read (0x0B) supported by SST25VF010A only */
+		.erase    = spi_erase_bulk,	
+		.voltage	= {2700, 3600},
+	},
+
+	
+		{
+		.vendor		= "SST",
+		.name		= "SST25VF040",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= SST_ID,
+		.model_id	= SST_SST25VF040_REMS,
+		.total_size	= 512,
+		.page_size	= 256,
+		.feature_bits	= FEATURE_WRSR_EWSR,
+//		.tested		= TEST_OK_PR,
+//		.probe		= PROBE_SPI_REMS,
+//		.probe_timing	= TIMING_ZERO,
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE				
+				.eraseblocks = { {4 * 1024, 128} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {32 * 1024, 16} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+#endif				
+				.eraseblocks = { {512 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			},
+		},
+	.unlock		= spi_disable_blockprotect,
+		.write		= spi_chip_write_1, /* AAI supported, but opcode is 0xAF */
+		.read		= spi_chip_read, /* Fast read (0x0B) supported by SST25VF010A only */
+		.erase    = spi_erase_bulk,	
+		.voltage	= {2700, 3600},
+	},
+
 
 //	{
 //		.vendor		= "SST",
@@ -6801,42 +6962,45 @@ const struct  flashchip  flashchips[]  =  {
 //		.voltage	= {2700, 3600},
 //	},
 
-//	{
-//		.vendor		= "SST",
-//		.name		= "SST25VF064C",
-//		.bustype	= BUS_SPI,
-//		.manufacture_id	= SST_ID,
-//		.model_id	= SST_SST25VF064C,
-//		.total_size	= 8192,
-//		.page_size	= 256,
-//		.feature_bits	= FEATURE_UNBOUND_READ,
+	{
+		.vendor		= "SST",
+		.name		= "SST25VF064C",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= SST_ID,
+		.model_id	= SST_SST25VF064C,
+		.total_size	= 8192,
+		.page_size	= 256,
+		.feature_bits	= FEATURE_WRSR_EWSR,
 //		.tested		= TEST_OK_PREU,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
-//		.block_erasers	=
-//		{
-//			{
-//				.eraseblocks = { {4 * 1024, 2048} },
-//				.block_erase = SPI_BLOCK_ERASE_20,
-//			}, {
-//				.eraseblocks = { {32 * 1024, 256} },
-//				.block_erase = SPI_BLOCK_ERASE_52,
-//			}, {
-//				.eraseblocks = { {64 * 1024, 128} },
-//				.block_erase = SPI_BLOCK_ERASE_D8,
-//			}, {
-//				.eraseblocks = { {8 * 1024 * 1024, 1} },
-//				.block_erase = SPI_BLOCK_ERASE_60,
-//			}, {
-//				.eraseblocks = { {8 * 1024 * 1024, 1} },
-//				.block_erase = SPI_BLOCK_ERASE_C7,
-//			},
-//		},
-//		.unlock		= spi_disable_blockprotect,
-//		.write		= spi_chip_write_256,
-//		.read		= spi_chip_read,
-//		.voltage	= {2700, 3600},
-//	},
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE						
+				.eraseblocks = { {4 * 1024, 2048} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {32 * 1024, 256} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+				.eraseblocks = { {64 * 1024, 128} },
+				.block_erase = SPI_BLOCK_ERASE_D8,
+			}, {
+				.eraseblocks = { {8 * 1024 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			}, {
+#endif				
+				.eraseblocks = { {8 * 1024 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_C7,
+			},
+		},
+		.unlock		= spi_disable_blockprotect,
+		.write		= spi_chip_write_256,
+		.read		= spi_chip_read,
+		.erase    = spi_erase_bulk,	
+		.voltage	= {2700, 3600},
+	},
 
 //	{
 //		.vendor		= "SST",
