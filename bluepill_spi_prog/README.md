@@ -27,7 +27,7 @@ Pins are used to connect the chip to the board:
  - SPI2_NSS  Pin - PA4
  
  This can be changed in the file "RTE_Device.h".
-![Schematic diagram](https://github.com/vernonet/blue_pill/edit/master/bluepill_spi_prog/schematic_diagram.jpg)
+![Schematic diagram](https://github.com/vernonet/blue_pill/edit/master/bluepill_spi_prog/schematic_diagram.png)
 
 
 To display debug information set in file "usbd_conf.h" :
