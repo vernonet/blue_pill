@@ -62,7 +62,8 @@ ARM_SPI_STATUS Spi_status(void);
 int32_t spi_chip_read         (uint32_t addr, void *data, uint32_t cnt);
 int32_t spi_chip_write_256    (uint32_t addr, const void *data, uint32_t cnt);
 int32_t spi_chip_write_256_11 (uint32_t addr, const void *data, uint32_t cnt);
-int32_t spi_chip_write_af     (uint32_t addr, const void *data, uint32_t cnt);
+int32_t spi_chip_write_ad     (uint32_t addr, const void *data, uint32_t cnt);  //SPI_WRITE_AAI AD
+int32_t spi_chip_write_af     (uint32_t addr, const void *data, uint32_t cnt);  //SPI_WRITE_AAI AF
 int32_t spi_chip_write_1      (uint32_t addr, const void *data, uint32_t cnt);
 int32_t spi_erase_bulk        (uint8_t cmd); 
 int32_t spi_erase_bulk_sec    (uint8_t cmd);

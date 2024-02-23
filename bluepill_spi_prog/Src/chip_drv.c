@@ -994,6 +994,117 @@ transfer_error:
   return status;
 }
  
+
+/**
+  \fn          int32_t ARM_Flash_ProgramData (uint32_t addr, const void *data, uint32_t cnt)
+  \brief       Program data to Flash.
+  \param[in]   addr  Data address.
+  \param[in]   data  Pointer to a buffer containing the data to be programmed to Flash.
+  \param[in]   cnt   Number of data items to program.
+  \return      number of data items programmed or \ref execution_status
+*/
+ int32_t spi_chip_write_ad(uint32_t addr, const void *data, uint32_t cnt) {
+  const uint8_t *buf;
+        uint8_t  cmd[4], first_ = 1, bytes;
+        int32_t  status;
+        uint32_t num;//, n;
+	  
+
+  if ((addr > (flschip->total_size*1024)) || (data == NULL)) {
+    return ARM_DRIVER_ERROR_PARAMETER;
+  }
+
+  status = ARM_DRIVER_OK;
+
+  num = 0U;
+  buf = data;
+	
+  while (cnt) {
+    /* Enable data write */
+    if (first_) status = SetWriteEnable();
+		   else status = ARM_DRIVER_OK;
+    
+    if (status == ARM_DRIVER_OK) {
+      /* Select Slave */
+      status = ptrSPI->Control(ARM_SPI_CONTROL_SS, ARM_SPI_SS_ACTIVE);
+      
+      if (status == ARM_DRIVER_OK) {
+        /* Prepare command with address */
+        cmd[0] = CMD_PROGRAM_BYTE_AD;
+        cmd[1] = (uint8_t)(addr >> 16U);
+        cmd[2] = (uint8_t)(addr >>  8U);
+        cmd[3] = (uint8_t)(addr >>  0U);
+
+        if (first_) bytes = 4;
+				    else bytes = 1;
+				status = ptrSPI->Send(cmd, bytes);
+
+        if (status == ARM_DRIVER_OK) {
+          /* Wait until command and address are sent */
+          while (ptrSPI->GetDataCount() != bytes) {__asm("nop"); };
+					 
+
+          status = ptrSPI->Send(&buf[num], 1U);
+
+          if (status == ARM_DRIVER_OK) {
+            /* Wait until data sent */
+            while (ptrSPI->GetDataCount() != 1U){__asm("nop"); };
+						delay_mic();
+
+            //addr += 1;
+            num  += 1;
+            cnt  -= 1;
+          }
+					else break;
+        }
+				else break;
+      }
+      /* Deselect Slave */
+      ptrSPI->Control(ARM_SPI_CONTROL_SS, ARM_SPI_SS_INACTIVE);
+
+      if (status == ARM_DRIVER_OK) {
+        /* Read status until device ready */
+        do {
+          status = ReadStatusReg(CMD_READ_STATUS, &cmd[0]);  //CMD_READ_FLAG_STATUS
+          if (status != ARM_DRIVER_OK) {
+            break;
+          }
+
+          /* Check Flags Status register value */
+          if ((cmd[0] & 0x1U) != 1U) {
+            FlashStatus.busy = 0U;
+          }
+
+        }
+        while ((cmd[0] & 0x1U) == 0x1U);
+      }
+    }
+
+    if (status != ARM_DRIVER_OK) {
+      break;
+    }
+    /* Number of data items programmed */
+    status = (int32_t)num;
+		if (first_) {
+			first_ = 0;
+			addr = 0;
+		}
+  }
+	
+	
+	if (SetWriteDisable()!= ARM_DRIVER_OK) {
+	    return ARM_DRIVER_ERROR;
+	}
+	ReadStatusReg(CMD_READ_STATUS, &cmd[0]);  //CMD_READ_FLAG_STATUS
+   
+		/* Check Flags Status register value */
+		if ((cmd[0] & 0x40U) != 0U) {
+			return ARM_DRIVER_ERROR;
+		}
+
+  return status;
+}
+ 
 int32_t spi_chip_write_1 (uint32_t addr, const void *data, uint32_t cnt) {  // one byte write
   const uint8_t *buf;
         uint8_t  cmd[4];

@@ -15,6 +15,7 @@ extern ARM_DRIVER_SPI     SPI_Driver_(DRIVER_SPI_NUM);
 #define CMD_WRITE_DISABLE       (0x04U)
 #define CMD_PAGE_PROGRAM        (0x02U)
 #define CMD_PAGE_PROGRAM_11     (0x11U)
+#define CMD_PROGRAM_BYTE_AD     (0xADU)
 #define CMD_PROGRAM_BYTE_AF     (0xAFU)
 #define CMD_PROGRAM_BYTE        (0x02U)
 #define CMD_READ_FLAG_STATUS    (0x70U)
