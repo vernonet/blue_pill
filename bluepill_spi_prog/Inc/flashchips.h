@@ -1,23 +1,3 @@
-/*
- * This file is part of the flashrom project.
- *
- * Copyright (C) 2000 Silicon Integrated System Corporation
- * Copyright (C) 2000 Ronald G. Minnich <rminnich@gmail.com>
- * Copyright (C) 2005-2007 coresystems GmbH <stepan@coresystems.de>
- * Copyright (C) 2006-2009 Carl-Daniel Hailfinger
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- */
-
 #ifndef __FLASHCHIPS_H__
 #define __FLASHCHIPS_H__ 1
 
@@ -25,13 +5,10 @@
  * Please keep this list sorted alphabetically by manufacturer. The first
  * entry of each section should be the manufacturer ID, followed by the
  * list of devices from that manufacturer (sorted by device ID).
- *
- * SPI parts have at least 16-bit device IDs if they support RDID.
  */
  
  #include <stdint.h>
- 
- //#include "W25Q80BV.h"
+
  /*
  * How many different contiguous runs of erase blocks with one size each do
  * we have for a given erase function?
