@@ -5806,6 +5806,191 @@ const struct  flashchip  flashchips[]  =  {
 		.erase    = spi_erase_bulk,
 		.voltage	= {2700, 3600},
 	},
+
+	{
+		.vendor		= "PUYA",
+		.name		= "P25D05H",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= PUYA_ID,
+		.model_id	= PUYA_P25D05H,
+		.total_size	= 64,
+		.page_size	= 256,
+		/* supports SFDP */
+		/* OTP: 3 x 512 bytes */
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+//		.tested		= TEST_OK_PREW,
+//		.probe		= PROBE_SPI_RDID,
+//		.probe_timing	= TIMING_ZERO,
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE				
+				.eraseblocks = { {256, 256} },
+				.block_erase = SPI_BLOCK_ERASE_81,
+			}, {
+				.eraseblocks = { {4 * 1024, 16} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {32 * 1024, 2} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+				.eraseblocks = { {64 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_D8,
+			}, {
+				.eraseblocks = { {256 * 256, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			}, {
+#endif				
+				.eraseblocks = { {256 * 256, 1} },
+				.block_erase = SPI_BLOCK_ERASE_C7,
+			}
+		},
+//		.printlock	= SPI_PRETTYPRINT_STATUS_REGISTER_BP4_SRWD,
+		.unlock		= spi_disable_blockprotect_bp4_srwd,
+		.write		= spi_chip_write_256,
+		.read		  = spi_chip_read, /* Fast read (0x0B) supported */
+		.erase    = spi_erase_bulk,
+		.voltage	= {2300, 3600},
+	},
+
+
+			{
+		.vendor		= "PUYA",
+		.name		= "P25D10H",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= PUYA_ID,
+		.model_id	= PUYA_P25D10H,
+		.total_size	= 128,
+		.page_size	= 256,
+		/* supports SFDP */
+		/* OTP: 3 x 512 bytes */
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+//		.tested		= TEST_OK_PREW,
+//		.probe		= PROBE_SPI_RDID,
+//		.probe_timing	= TIMING_ZERO,
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE				
+				.eraseblocks = { {256, 512} },
+				.block_erase = SPI_BLOCK_ERASE_81,
+			}, {
+				.eraseblocks = { {4 * 1024, 32} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {32 * 1024, 4} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+				.eraseblocks = { {64 * 1024, 2} },
+				.block_erase = SPI_BLOCK_ERASE_D8,
+			}, {
+				.eraseblocks = { {256 * 512, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			}, {
+#endif				
+				.eraseblocks = { {256 * 512, 1} },
+				.block_erase = SPI_BLOCK_ERASE_C7,
+			}
+		},
+//		.printlock	= SPI_PRETTYPRINT_STATUS_REGISTER_BP4_SRWD,
+		.unlock		= spi_disable_blockprotect_bp4_srwd,
+		.write		= spi_chip_write_256,
+		.read		  = spi_chip_read, /* Fast read (0x0B) supported */
+		.erase    = spi_erase_bulk,
+		.voltage	= {2300, 3600},
+	},
+
+		{
+		.vendor		= "PUYA",
+		.name		= "P25D20H",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= PUYA_ID,
+		.model_id	= PUYA_P25D20H,
+		.total_size	= 256,
+		.page_size	= 256,
+		/* supports SFDP */
+		/* OTP: 3 x 512 bytes */
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+//		.tested		= TEST_OK_PREW,
+//		.probe		= PROBE_SPI_RDID,
+//		.probe_timing	= TIMING_ZERO,
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE				
+				.eraseblocks = { {256, 1024} },
+				.block_erase = SPI_BLOCK_ERASE_81,
+			}, {
+				.eraseblocks = { {4 * 1024, 64} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {32 * 1024, 8} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+				.eraseblocks = { {64 * 1024, 4} },
+				.block_erase = SPI_BLOCK_ERASE_D8,
+			}, {
+				.eraseblocks = { {256 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			}, {
+#endif				
+				.eraseblocks = { {256 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_C7,
+			}
+		},
+//		.printlock	= SPI_PRETTYPRINT_STATUS_REGISTER_BP4_SRWD,
+		.unlock		= spi_disable_blockprotect_bp4_srwd,
+		.write		= spi_chip_write_256,
+		.read		  = spi_chip_read, /* Fast read (0x0B) supported */
+		.erase    = spi_erase_bulk,
+		.voltage	= {2300, 3600},
+	},
+
+	{
+		.vendor		= "PUYA",
+		.name		= "P25D40H",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= PUYA_ID,
+		.model_id	= PUYA_P25D40H,
+		.total_size	= 512,
+		.page_size	= 256,
+		/* supports SFDP */
+		/* OTP: 3 x 512 bytes */
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+//		.tested		= TEST_OK_PREW,
+//		.probe		= PROBE_SPI_RDID,
+//		.probe_timing	= TIMING_ZERO,
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE				
+				.eraseblocks = { {256, 2048} },
+				.block_erase = SPI_BLOCK_ERASE_81,
+			}, {
+				.eraseblocks = { {4 * 1024, 128} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {32 * 1024, 16} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+				.eraseblocks = { {64 * 1024, 8} },
+				.block_erase = SPI_BLOCK_ERASE_D8,
+			}, {
+				.eraseblocks = { {256 * 2048, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			}, {
+#endif				
+				.eraseblocks = { {256 * 2048, 1} },
+				.block_erase = SPI_BLOCK_ERASE_C7,
+			}
+		},
+//		.printlock	= SPI_PRETTYPRINT_STATUS_REGISTER_BP4_SRWD,
+		.unlock		= spi_disable_blockprotect_bp4_srwd,
+		.write		= spi_chip_write_256,
+		.read		  = spi_chip_read, /* Fast read (0x0B) supported */
+		.erase    = spi_erase_bulk,
+		.voltage	= {2300, 3600},
+	},
 //	
 //	{
 //		.vendor		= "Sanyo",
