@@ -288,6 +288,18 @@
 #define EON_EN29GL128HL		0x7F2101	/* Uniform Sectors, WP protects Top OR Bottom sector */
 #define EON_EN29GL256HL		0x7F2201	/* Uniform Sectors, WP protects Top OR Bottom sector */
 
+
+#define FUDAN_ID		0x7F7F7F7F7F7F7FA1	/* Shanghai Fudan Microelectronics resides in bank 8 */
+#define FUDAN_ID_NOPREFIX	0xA1	/* Fudan, missing 0x7F prefix */
+#define FUDAN_FM25F005		0x3110
+#define FUDAN_FM25F01		0x3111
+#define FUDAN_FM25F02		0x3112	/* Same as FM25F02A */
+#define FUDAN_FM25F04		0x3113	/* Same as FM25F04A */
+#define FUDAN_FM25Q08		0x4014
+#define FUDAN_FM25Q16		0x4015
+#define FUDAN_FM25Q32		0x4016
+
+
 #define GIGADEVICE_ID		0xC8	/* GigaDevice */
 #define GIGADEVICE_GD25Q512	0x4010
 #define GIGADEVICE_GD25Q10	0x4011
