@@ -30,7 +30,7 @@ Pins are used to connect the chip to the board:
 ![Schematic diagram](https://github.com/vernonet/blue_pill/edit/master/bluepill_spi_prog/schematic_diagram.jpg)
 
 
-To display debug information set in file "usbd_conf.h" :
+To display debug information set in file "usbd_conf.h" (debugging is output to the SWO port) :
  - USBD_DEBUG_LEVEL             1
  - SPI_DEBUG_LEVEL              1
  
