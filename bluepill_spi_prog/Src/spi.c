@@ -281,13 +281,13 @@ static int32_t WriteStatusReg (uint8_t sr) {
 		status = SendCmd(buf, 1U);
 			
 		if (status) return status;
+	}
 
     /* Set command */
     buf[0] = CMD_WRSR;
 	  buf[1] = sr;
 
     status = SendCmd(buf, 2U);
-	}
   
   return (status);
 }

@@ -5178,7 +5178,89 @@ const struct  flashchip  flashchips[]  =  {
 		.erase    = spi_erase_bulk,
 		.voltage	= {1650, 3600},
 	},
+	
+{
+		.vendor		= "Macronix",
+		.name		= "MX25U4035",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= MACRONIX_ID,
+		.model_id	= MACRONIX_MX25U4035,
+		.total_size	= 512,
+		.page_size	= 256,
+		.feature_bits	= FEATURE_WRSR_WREN,
+//		.tested		= TEST_OK_PREW,
+//		.probe		= probe_spi_rdid,
+//		.probe_timing	= TIMING_ZERO,
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE
+				.eraseblocks = { {4 * 1024, 128} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {64 * 1024, 8} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+				.eraseblocks = { {64 * 1024, 8} },
+				.block_erase = SPI_BLOCK_ERASE_D8,
+			}, {
+				.eraseblocks = { {512 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			}, {
+#endif
+				.eraseblocks = { {512 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_C7,
+			},
+		},
+//		.printlock	= spi_prettyprint_status_register_bp2_srwd,
+		.unlock		= spi_disable_blockprotect,
+		.write		= spi_chip_write_256,
+		.read		= spi_chip_read, /* Fast read (0x0B) supported */
+		.erase    = spi_erase_bulk,
+		.voltage	= {1650, 2000},
+	},	
 
+{
+		.vendor		= "Macronix",
+		.name		= "MX25U8035",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= MACRONIX_ID,
+		.model_id	= MACRONIX_MX25U4035,
+		.total_size	= 1024,
+		.page_size	= 256,
+		.feature_bits	= FEATURE_WRSR_WREN,
+		.tested		= TEST_OK_PREW,
+//		.probe		= probe_spi_rdid,
+//		.probe_timing	= TIMING_ZERO,
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE
+				.eraseblocks = { {4 * 1024, 256} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {64 * 1024, 16} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+				.eraseblocks = { {64 * 1024, 16} },
+				.block_erase = SPI_BLOCK_ERASE_D8,
+			}, {
+				.eraseblocks = { {512 * 2048, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			}, {
+#endif
+				.eraseblocks = { {512 * 2048, 1} },
+				.block_erase = SPI_BLOCK_ERASE_C7,
+			},
+		},
+//		.printlock	= spi_prettyprint_status_register_bp2_srwd,
+		.unlock		= spi_disable_blockprotect,
+		.write		= spi_chip_write_256,
+		.read		= spi_chip_read, /* Fast read (0x0B) supported */
+		.erase    = spi_erase_bulk,
+		.voltage	= {1650, 2000},
+	},		
+	
 
 //	{
 //		.vendor		= "Macronix",
