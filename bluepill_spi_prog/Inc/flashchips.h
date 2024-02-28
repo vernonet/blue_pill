@@ -483,10 +483,10 @@
 #define ST_M25P20_RES		0x11
 #define ST_M25P40		0x2013
 #define ST_M25P40_RES		0x12
-#define ST_M25P80		0x2014
-#define ST_M25P16		0x2015
-#define ST_M25P32		0x2016
-#define ST_M25P64		0x2017
+#define ST_M25P80		  0x2014
+#define ST_M25P16		  0x2015
+#define ST_M25P32		  0x2016
+#define ST_M25P64		  0x2017
 #define ST_M25P128		0x2018
 #define ST_M45PE10		0x4011
 #define ST_M45PE20		0x4012
@@ -520,7 +520,7 @@
  * W25X chips are SPI, first byte of device ID is memory type, second
  * byte of device ID is related to log(bitsize).
  */
-#define WINBOND_NEX_ID		0xEF	/* Winbond (ex Nexcom) serial flashes */
+#define WINBOND_NEX_ID  		0xEF	/* Winbond (ex Nexcom) serial flashes */
 #define WINBOND_NEX_W25X10	0x3011
 #define WINBOND_NEX_W25X20	0x3012
 #define WINBOND_NEX_W25X40	0x3013
@@ -553,8 +553,8 @@
 #define WINBOND_NEX_W25Q256JV	0x7019
 
 
-#define ISSI_ID			0xD5	/* ISSI Integrated Silicon Solutions, see also PMC. */
-#define ISSI_ID_SPI		0x9D	/* ISSI ID used for SPI flash, see also PMC_ID_NOPREFIX */
+#define ISSI_ID			      0xD5	/* ISSI Integrated Silicon Solutions, see also PMC. */
+#define ISSI_ID_SPI		    0x9D	/* ISSI ID used for SPI flash, see also PMC_ID_NOPREFIX */
 #define ISSI_IS25LP064		0x6017
 #define ISSI_IS25WQ020		0x1152
 #define ISSI_IS25LP128		0x6018
@@ -628,12 +628,12 @@ struct flashchip {
 	int feature_bits;
 
 	/* Indicate how well flashrom supports different operations of this flash chip. */
-	struct tested {
-		enum test_state probe;
-		enum test_state read;
-		enum test_state erase;
-		enum test_state write;
-	} tested;
+//	struct tested {
+//		enum test_state probe;
+//		enum test_state read;
+//		enum test_state erase;
+//		enum test_state write;
+//	} tested;
 
 	/*
 	 * Erase blocks and associated erase function. Any chip erase function
