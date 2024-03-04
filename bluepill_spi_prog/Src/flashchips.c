@@ -2101,7 +2101,7 @@ const struct  flashchip  flashchips[]  =  {
 	
 	{
 		.vendor		= "Boya/BoHong Microelectronics",
-		.name		= "B.25D16A",
+		.name		= "BY25D16A",
 		.bustype	= BUS_SPI,
 		.manufacture_id	= BOYA_BOHONG_ID,
 		.model_id	= BOYA_BOHONG_B_25D16A,
@@ -2142,13 +2142,13 @@ const struct  flashchip  flashchips[]  =  {
 	
 	{
 		.vendor		= "Boya/BoHong Microelectronics",
-		.name		= "B.25Q32BS",
+		.name		= "BY25Q32BS",
 		.bustype	= BUS_SPI,
 		.manufacture_id	= BOYA_BOHONG_ID,
 		.model_id	= BOYA_BOHONG_B_25Q32BS,
 		.total_size	= 4096,
 		.page_size	= 256,
-		.feature_bits	= FEATURE_WRSR_WREN,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_WRSR_EWSR | FEATURE_WRSR_EXT2 | FEATURE_WRSR2 | FEATURE_WRSR3,
 //		.tested		= TEST_OK_PR,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,
@@ -2156,16 +2156,16 @@ const struct  flashchip  flashchips[]  =  {
 		{
 			{
 #ifndef SIMPLY_FLS_BASE				
-				.eraseblocks = { {4 * 1024, 512} },
+				.eraseblocks = { {4 * 1024, 1024} },
 				.block_erase = SPI_BLOCK_ERASE_20,
 			}, {
-				.eraseblocks = { {32 * 1024, 64} },
+				.eraseblocks = { {32 * 1024, 128} },
 				.block_erase = SPI_BLOCK_ERASE_52,
 			}, {
-				.eraseblocks = { {64 * 1024, 32} },
+				.eraseblocks = { {64 * 1024, 64} },
 				.block_erase = SPI_BLOCK_ERASE_D8,
 			}, {
-				.eraseblocks = { {2 * 1024 * 1024, 1} },
+				.eraseblocks = { {4 * 1024 * 1024, 1} },
 				.block_erase = SPI_BLOCK_ERASE_60,
 			}, {
 #endif				
@@ -2174,7 +2174,7 @@ const struct  flashchip  flashchips[]  =  {
 			}
 		},
 //		.printlock	= spi_prettyprint_status_register_bp2_srwd,
-		.unlock		= spi_disable_blockprotect_bp2_srwd,
+		.unlock		= spi_disable_blockprotect_bp4_srwd,
 		.write		= spi_chip_write_256,
 		.read		= spi_chip_read,
 		.erase  = spi_erase_bulk,
@@ -8919,7 +8919,7 @@ const struct  flashchip  flashchips[]  =  {
 		.total_size	= 16384,
 		.page_size	= 256,
 		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42 */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EWSR | FEATURE_WRSR_EXT2 | FEATURE_WRSR2 | FEATURE_WRSR3,
 //		.tested		= TEST_OK_PREWU,
 //		.probe		= probe_spi_rdid,
 //		.probe_timing	= TIMING_ZERO,

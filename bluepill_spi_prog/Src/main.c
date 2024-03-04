@@ -110,6 +110,7 @@ int main(void)
   int32_t stat;
   // uint8_t str_buf[100];
   uint16_t led_delay;
+	uint8_t sss;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -139,6 +140,7 @@ int main(void)
 			if (flschip->voltage.max && flschip->voltage.max < 3000) {
 				SPI_UsrLog("\n Warning, the max Vcc of the chip is %d mV", flschip->voltage.max);
 			}
+			
       HAL_Delay(800);
       set_msd_size(flschip->total_size);
       prepare_device(BACKUP);
@@ -331,6 +333,8 @@ bool prepare_device(Media_mode mde)
   int32_t stat = 0;
   uint8_t str_buf[100];
   int8_t sts;
+	uint8_t sr;
+	int32_t feature_bits = flschip->feature_bits;
 
   complet = 0;
   if (mde != BACKUP && mde != INFO)
@@ -364,26 +368,35 @@ bool prepare_device(Media_mode mde)
       device_mode = INFO;
 			USBD_UsrLog("\n\r device_mode -> %s", getModeName(device_mode));
 
-      if (stat == ARM_DRIVER_ERROR_BLK_PROT)
+       if (stat == ARM_DRIVER_ERROR_BLK_PROT)
       {
-        if (Prepare_FAT("Disable block ptotections error", "ERROR "))
-          Error_Handler();
+				sprintf((char *)&str_buf[0], "Disable block ptotections error");
       }
       else if (stat == ARM_DRIVER_ERROR_STS_REG_FF)
       {
-        if (Prepare_FAT("Chip erase error statusReg 0xFF", "ERROR "))
-          Error_Handler();
+				sprintf((char *)&str_buf[0], "Chip erase error statusReg 0xFF");
       }
       else if (stat == ARM_DRIVER_ERROR_NOT_BLANK)
       {
-        if (Prepare_FAT("Chip not blank after erase", "ERROR "))
-          Error_Handler();
+				 sprintf((char *)&str_buf[0], "Chip not blank after erase");
       }
       else
       {
-        if (Prepare_FAT("Chip erase error", "ERROR "))
-          Error_Handler();
+				 sprintf((char *)&str_buf[0], "Chip erase error");
       }
+			//add status register values to the line
+			ReadStatusReg(CMD_READ_STATUS, &sr);
+			sprintf((char *)&str_buf[strlen((char *)&str_buf[0])], " SR1_0x%X", sr);
+			if (feature_bits & FEATURE_WRSR2) {
+				ReadStatusReg(CMD_READ_STATUS2, &sr);
+				sprintf((char *)&str_buf[strlen((char *)&str_buf[0])], " SR2_0x%X", sr);
+			}	
+			if (feature_bits & FEATURE_WRSR3) {
+				ReadStatusReg(CMD_READ_STATUS3, &sr);
+				sprintf((char *)&str_buf[strlen((char *)&str_buf[0])], " SR3_0x%X ", sr);
+			}	
+			if (Prepare_FAT((char *)&str_buf[0], "ERROR "))
+				Error_Handler();
     }
     else
     {

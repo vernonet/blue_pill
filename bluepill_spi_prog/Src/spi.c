@@ -257,7 +257,7 @@ int32_t ReadConfigReg (uint8_t cmd, uint8_t *stat) {
 }
 
 /* Write status or flag status register */
-static int32_t WriteStatusReg (uint8_t sr) {
+static int32_t WriteStatusReg (uint8_t cmd, uint8_t sr) {
   int32_t status; /* driver execution status */
   uint8_t buf[4] = {0};
 	int32_t feature_bits = flschip->feature_bits;
@@ -284,13 +284,14 @@ static int32_t WriteStatusReg (uint8_t sr) {
 	}
 
     /* Set command */
-    buf[0] = CMD_WRSR;
+    buf[0] = cmd;
 	  buf[1] = sr;
 
     status = SendCmd(buf, 2U);
   
   return (status);
 }
+
 
 /* Set "Write enable latch" bit in status register */
 int32_t SetWriteEnable (void) {
@@ -400,7 +401,7 @@ static int32_t spi_disable_blockprotect_generic(uint8_t bp_mask, uint8_t lock_ma
 			return 1;
 		}
 		/* All bits except the register lock bit (often called SPRL, SRWD, WPEN) are readonly. */
-		status = WriteStatusReg(stat & ~lock_mask);
+		status = WriteStatusReg(CMD_WRSR, stat & ~lock_mask);
 		if (status) {
 			SPI_UsrLog("spi_write_status_register failed.\n");
 			return status;
@@ -414,7 +415,7 @@ static int32_t spi_disable_blockprotect_generic(uint8_t bp_mask, uint8_t lock_ma
 		SPI_UsrLog("done.\n");
 	}
 	/* Global unprotect. Make sure to mask the register lock bit as well. */
-	status = WriteStatusReg (stat & ~(bp_mask | lock_mask) & unprotect_mask);
+	status = WriteStatusReg (CMD_WRSR, stat & ~(bp_mask | lock_mask) & unprotect_mask);
 	if (status) {
 		SPI_UsrLog("write_status_register failed.\n");
 		return status;

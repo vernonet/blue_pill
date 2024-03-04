@@ -11,6 +11,8 @@ extern ARM_DRIVER_SPI     SPI_Driver_(DRIVER_SPI_NUM);
 /* SPI Data Flash Commands */
 #define CMD_READ_DATA           (0x03U)
 #define CMD_READ_STATUS         (0x05U)
+#define CMD_READ_STATUS2        (0x35U)
+#define CMD_READ_STATUS3        (0x15U)
 #define CMD_WRITE_ENABLE        (0x06U)
 #define CMD_WRITE_DISABLE       (0x04U)
 #define CMD_PAGE_PROGRAM        (0x02U)
@@ -29,6 +31,8 @@ extern ARM_DRIVER_SPI     SPI_Driver_(DRIVER_SPI_NUM);
 #define CMD_READ_RDID_PMC       (0xABU)
 #define CMD_EWSR                (0x50U)
 #define CMD_WRSR                (0x01U)
+#define CMD_WRSR2               (0x31U)
+#define CMD_WRSR3               (0x11U)
 #define CMD_READ_CONF_REG       (0x15U)
 #define CMD_READ4B_DATA         (0x13U)
 #define CMD_PAGE4B_PROGRAM      (0x12U)

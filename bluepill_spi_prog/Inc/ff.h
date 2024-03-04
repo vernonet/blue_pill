@@ -63,6 +63,7 @@ typedef DWORD FSIZE_t;
 #define FF_USE_STRFUNC	0
 #define FF_CODE_PAGE  866
 
+
 //--------------------------------------------------------------
 // Medien-Typen (in dieser LIB nur MMC)
 //--------------------------------------------------------------

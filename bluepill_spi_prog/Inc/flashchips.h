@@ -34,6 +34,10 @@
 #define FEATURE_WRSR_EWSR	      (1 << 6)
 #define FEATURE_WRSR_WREN	      (1 << 7)
 #define FEATURE_WRSR_EITHER	    (FEATURE_WRSR_EWSR | FEATURE_WRSR_WREN)
+#define FEATURE_WRSR_EXT2	      (1 << 20)
+#define FEATURE_WRSR2		        (1 << 21)
+#define FEATURE_WRSR_EXT3	      ((1 << 22) | FEATURE_WRSR_EXT2)
+#define FEATURE_WRSR3		        (1 << 23)
 #define FEATURE_OTP		          (1 << 8)
 #define FEATURE_QPI		          (1 << 9)
 #define FEATURE_4BA_ENTER	      (1 << 10) /**< Can enter/exit 4BA mode with instructions 0xb7/0xe9 w/o WREN */
