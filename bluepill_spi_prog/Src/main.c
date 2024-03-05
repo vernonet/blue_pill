@@ -302,6 +302,11 @@ const char* getModeName(Media_mode mode)
 
 void set_msd_size(uint32_t size_in_kb)
 {
+	if (size_in_kb < 32768) {  //only two bytes for sectors count
+	  boot_sec[19] = ((size_in_kb * 1024 / STORAGE_BLK_SIZ) & 0xFF) + FAT_FILE_DATA_BLK; // NumberOfSectors16
+	  boot_sec[20] = ((size_in_kb * 1024 / STORAGE_BLK_SIZ) >> 8) & 0xFF;                // NumberOfSectors16
+	}
+	
   boot_sec[32] = ((size_in_kb * 1024 / STORAGE_BLK_SIZ) & 0xFF) + FAT_FILE_DATA_BLK; // NumberOfSectors32
   boot_sec[33] = ((size_in_kb * 1024 / STORAGE_BLK_SIZ) >> 8) & 0xFF;                // NumberOfSectors32
   boot_sec[34] = ((size_in_kb * 1024 / STORAGE_BLK_SIZ) >> 16) & 0xFF;               // NumberOfSectors32
