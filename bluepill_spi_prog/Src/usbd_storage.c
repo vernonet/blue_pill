@@ -78,21 +78,16 @@ int8_t STORAGE_GetMaxLun(void);
 // static uint32_t GetSectorSize(uint32_t Sector);
 static int8_t Write_LL(uint32_t dest, uint8_t *buf, uint16_t len);
 int8_t Sector_Erase(void);
-// static void MX_TIM6_Init(void);
 
-uint32_t FirstSector = 0, NbOfSectors = 0, Address = 0, Sector = 0;
-uint32_t SectorError = 0, last_wr_adr = 0xffffffff, modulo = 0;
+
+uint32_t  modulo = 0;
 /*Variable used for Erase procedure*/
 uint8_t flash_eraset = 0, temp = 0, Wr_Protect, mod = 0;
-uint8_t write_started = 0;
 uint16_t block_num_cnt = 0;
-// IWDG_HandleTypeDef hiwdg;
 extern uint8_t complet, error, error_sts;
-// TIM_HandleTypeDef htim6;
 extern uint8_t inter;
 volatile uint32_t ttt = 0;
 extern __IO uint32_t CRCValue_nominal;
-bool backup_mode = false; // backup firmware first
 Media_mode device_mode;
 extern uint32_t spi_speed;
 ARM_SPI_STATUS sts;
@@ -125,7 +120,6 @@ const unsigned char backup_fil[28] = {
     0xB6, 0x4E, 0xB6, 0x4E, 0x00, 0x00, 0x63, 0x7F, 0xB6, 0x4E, 0x02, 0x00 
 };
 
-uint8_t a[5];
 int32_t file_size = 0;
 
 USBD_StorageTypeDef USBD_DISK_fops = {
@@ -192,7 +186,7 @@ int8_t create_fs(const char * fil_str) {   //create fat for BACKUP, INFO device 
   fs = (FATFS *)malloc(sizeof(FATFS));
   FIL fil;
   char sd_path[4] = "0:/";
-  char filename[65] = {0}; // 46
+  char filename[FF_MAX_LFN+1] = {0}; // 46
 	uint8_t count;
 	
 	if (device_mode == INFO) count = sizeof filename - 1;  //not need ext of file
@@ -214,15 +208,15 @@ int8_t create_fs(const char * fil_str) {   //create fat for BACKUP, INFO device 
   }
   if (device_mode != INFO) strcat(filename, ".bin");
   check = f_mount(fs, sd_path, 0);
-  check = f_open(&fil, filename, FA_CREATE_ALWAYS);  //filename leght must be <=64 chars(FF_MAX_LFN)
-  memcpy(&FAT[0] + STORAGE_BLK_SIZ * FAT_DIRECTORY_BLK, fs->win, 0x200); // 0xC0  - that should be enough
+  check |= f_open(&fil, filename, FA_CREATE_ALWAYS);  //filename leght must be <=64 chars(FF_MAX_LFN)
+  memcpy(&FAT[0] + STORAGE_BLK_SIZ * FAT_DIRECTORY_BLK, fs->win, sizeof fs->win); 
   //check = f_write(&fil, "123456", 6, &bw);
-  check = f_close(&fil);
-  check = f_mount(NULL, sd_path, 0);
+  check |= f_close(&fil);
+  check |= f_mount(NULL, sd_path, 0);
   free(fs);
   if (check)
     return -1;
-  uint8_t *buf_temp = &FAT[STORAGE_BLK_SIZ * FAT_DIRECTORY_BLK + (0x200-8)];
+  uint8_t *buf_temp = &FAT[STORAGE_BLK_SIZ * FAT_DIRECTORY_BLK + (sizeof fs->win -8)];
   while (*(uint32_t *)buf_temp == 0)
   { // find position for file size
     buf_temp = buf_temp - 0x10;
@@ -253,9 +247,9 @@ int8_t STORAGE_Init(uint8_t lun)
     // HAL_FLASH_Unlock();
     break;
   case 1:
-    return 1;
+    return -1;
   default:
-    return 1;
+    return -1;
   }
   return 0;
 }
@@ -277,9 +271,9 @@ int8_t STORAGE_GetCapacity(uint8_t lun, uint32_t *block_num,
     *block_size = STORAGE_BLK_SIZ;
     break;
   case 1:
-    return 1;
+    return -1;
   default:
-    return 1;
+    return -1;
   }
   return 0;
 }
@@ -297,9 +291,9 @@ int8_t STORAGE_IsReady(uint8_t lun)
     return 0;
     //      break;
   case 1:
-    return 1;
+    return -1;
   default:
-    return 1;
+    return -1;
   }
 }
 
@@ -363,7 +357,7 @@ int8_t STORAGE_Read(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
 int8_t Sector_Erase(void)
 {
   if (EraseChip())
-    return 1;
+    return -1;
   // flash_eraset = 1;
   // printf ("\n Sector erase run");
   // MX_TIM6_Init();
@@ -408,7 +402,7 @@ int8_t Prepare_FAT(const char *fil_str, const char *dsk_lbl)
  * @param  dest: Destination addres
  * @param  src: Pointer to source data
  * @param  len: number byte for writing
- * @retval Status (0 : Ok / 1 : Error)
+ * @retval Status (0 : Ok / -1 : Error)
  */
 static int8_t Write_LL(uint32_t dest, uint8_t *src, uint16_t len)
 {
@@ -435,7 +429,7 @@ static int8_t Write_LL(uint32_t dest, uint8_t *src, uint16_t len)
   else if ((dest <= ((uint32_t)&FAT[0] + sizeof(FAT))) && (dest >= ((uint32_t)&FAT[0])))
     memcpy((uint8_t *)dest, src, len);
   else
-    return 1;
+    return -1;
 
   return ARM_DRIVER_OK;
 }
@@ -537,7 +531,7 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
   case 1:
     break;
   default:
-    return 1;
+    return -1;
   }
   return 0;
 }

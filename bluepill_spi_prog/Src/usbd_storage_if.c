@@ -247,7 +247,8 @@ int8_t STORAGE_IsReady_FS(uint8_t lun)
 int8_t STORAGE_IsWriteProtected_FS(uint8_t lun)
 {
   /* USER CODE BEGIN 5 */
-  return STORAGE_IsWriteProtected(lun);
+  if (STORAGE_IsWriteProtected(lun)) return (USBD_BUSY);
+	   else return (USBD_OK);
   /* USER CODE END 5 */
 }
 

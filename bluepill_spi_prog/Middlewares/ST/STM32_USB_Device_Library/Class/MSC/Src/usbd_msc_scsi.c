@@ -334,6 +334,16 @@ static int8_t SCSI_ReadFormatCapacity(USBD_HandleTypeDef  *pdev, uint8_t lun, ui
 */
 static int8_t SCSI_ModeSense6 (USBD_HandleTypeDef  *pdev, uint8_t lun, uint8_t *params)
 {
+	 /* Check If media is write-protected */  
+	 //https://habr.com/ru/articles/571704/
+	if (((USBD_StorageTypeDef *)pdev->pUserData)->IsWriteProtected(lun) == USBD_BUSY)
+  {
+    MSC_Mode_Sense6_data[2] |= 0x80;
+  }
+	else {
+    MSC_Mode_Sense6_data[2] &= 0x7F;
+  }
+	
   USBD_MSC_BOT_HandleTypeDef  *hmsc = (USBD_MSC_BOT_HandleTypeDef*)pdev->pClassData; 
   uint16_t len = 8 ;
   hmsc->bot_data_length = len;
@@ -355,6 +365,16 @@ static int8_t SCSI_ModeSense6 (USBD_HandleTypeDef  *pdev, uint8_t lun, uint8_t *
 */
 static int8_t SCSI_ModeSense10 (USBD_HandleTypeDef  *pdev, uint8_t lun, uint8_t *params)
 {
+	 /* Check If media is write-protected */
+	 //https://habr.com/ru/articles/571704/
+	if (((USBD_StorageTypeDef *)pdev->pUserData)->IsWriteProtected(lun) == USBD_BUSY)
+  {
+    MSC_Mode_Sense6_data[2] |= 0x80;
+  }
+	else {
+    MSC_Mode_Sense6_data[2] &= 0x7F;
+  }
+	
   uint16_t len = 8;
   USBD_MSC_BOT_HandleTypeDef  *hmsc = (USBD_MSC_BOT_HandleTypeDef*)pdev->pClassData; 
   

@@ -78,6 +78,10 @@ const uint8_t  MSC_Page00_Inquiry_Data[] = {//7
 	0x80, 
 	0x83 
 };  
+
+
+
+#if (0)  //old version
 /* USB Mass storage sense 6  Data */
 const uint8_t  MSC_Mode_Sense6_data[] = {
 	0x00,
@@ -100,6 +104,41 @@ const uint8_t  MSC_Mode_Sense10_data[] = {
 	0x00, 
 	0x00
 };
+
+#else
+/* USB Mass storage sense 6 Data */
+uint8_t MSC_Mode_Sense6_data[MODE_SENSE6_LEN] =
+{
+  0x03,     /* MODE DATA LENGTH. The number of bytes that follow. */
+  0x00,     /* MEDIUM TYPE. 00h for SBC devices. */
+  0x00,     /* DEVICE-SPECIFIC PARAMETER. For SBC devices: 
+             *   bit 7: WP. Set to 1 if the media is write-protected.
+             *   bits 6..4: reserved
+             *   bit 4: DPOFUA. Set to 1 if the device supports the DPO and FUA bits (used in caching)
+             *   bits 3..0: reserved*/
+  0x00      /* Put Product Serial number */
+};
+
+
+/* USB Mass storage sense 10  Data */
+uint8_t MSC_Mode_Sense10_data[MODE_SENSE10_LEN] =
+{
+  0x07,     /* MODE DATA LENGTH. The number of bytes that follow. */
+  0x00,     /* MEDIUM TYPE. 00h for SBC devices. */
+  0x00,     /* DEVICE-SPECIFIC PARAMETER. For SBC devices: 
+             *   bit 7: WP. Set to 1 if the media is write-protected.
+             *   bits 6..4: reserved
+             *   bit 4: DPOFUA. Set to 1 if the device supports the DPO and FUA bits (used in caching)
+             *   bits 3..0: reserved*/
+  0x00,     /* Reserved */
+  0x00,     /* Reserved */
+  0x00,     /* Reserved */
+  0x00,     /* Reserved */
+  0x00      /* BLOCK DESCRIPTOR LENGTH. The length in bytes of all block descriptors in the
+             *   mode parameter list. */
+};
+#endif
+
 /**
   * @}
   */ 

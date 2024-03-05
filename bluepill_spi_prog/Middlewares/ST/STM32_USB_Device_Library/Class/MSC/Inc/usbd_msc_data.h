@@ -48,9 +48,17 @@
 /** @defgroup USB_INFO_Exported_Defines
   * @{
   */ 
+	
+#if(0)	//old version
 #define MODE_SENSE6_LEN			 8
 #define MODE_SENSE10_LEN		 8
-#define LENGTH_INQUIRY_PAGE00		 7
+#define LENGTH_INQUIRY_PAGE00		 7	
+
+#else	
+#define MODE_SENSE6_LEN                    0x04U
+#define MODE_SENSE10_LEN                   0x08U
+#define LENGTH_INQUIRY_PAGE00              0x06U
+#endif
 #define LENGTH_FORMAT_CAPACITIES    	20
 
 /**
@@ -79,8 +87,12 @@
   * @{
   */ 
 extern const uint8_t MSC_Page00_Inquiry_Data[];  
-extern const uint8_t MSC_Mode_Sense6_data[];
-extern const uint8_t MSC_Mode_Sense10_data[] ;
+//extern const uint8_t MSC_Mode_Sense6_data[];
+//extern const uint8_t MSC_Mode_Sense10_data[] ;
+
+  
+extern uint8_t MSC_Mode_Sense6_data[];
+extern uint8_t MSC_Mode_Sense10_data[] ;
 
 /**
   * @}
