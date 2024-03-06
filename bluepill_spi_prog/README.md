@@ -34,6 +34,7 @@ To display debug information set in file "usbd_conf.h" (debugging is output to t
  - USBD_DEBUG_LEVEL             1
  - SPI_DEBUG_LEVEL              1
  
+ In Linux not working, working in WinXP - Win11.
  Problems with Windows 10 - windows 10 creates a folder on the disk - "System Volume Information". To fix this:
    
    Step 1:
