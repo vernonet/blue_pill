@@ -91,7 +91,7 @@ static void MX_GPIO_Init(void);
 bool process_complete(Media_mode mde);
 bool prepare_device(Media_mode mde);
 void key_led(uint32_t blk);
-void set_msd_size(uint32_t size_in_kb);
+//void set_msd_size(uint32_t size_in_kb);
 const char* getModeName(Media_mode mode); 
 /* USER CODE END PFP */
 
@@ -142,7 +142,6 @@ int main(void)
 			}
 			
       HAL_Delay(800);
-      set_msd_size(flschip->total_size);
       prepare_device(BACKUP);
       key_led(40);
       if (prepare_device(VERIFY))
@@ -170,7 +169,7 @@ int main(void)
       // flash not identified  or wrong connection
       HAL_Delay(800);
       // flschip = flash_id_to_entry(GENERIC_MANUF_ID, GENERIC_DEVICE_ID);
-      set_msd_size(1024);
+      //set_msd_size(1024);
       prepare_device(INFO);
       Error_Handler();
     }
@@ -300,18 +299,6 @@ const char* getModeName(Media_mode mode)
 }
 
 
-void set_msd_size(uint32_t size_in_kb)
-{
-	if (size_in_kb < 32768) {  //only two bytes for sectors count
-	  boot_sec[19] = ((size_in_kb * 1024 / STORAGE_BLK_SIZ) & 0xFF) + FAT_FILE_DATA_BLK; // NumberOfSectors16
-	  boot_sec[20] = ((size_in_kb * 1024 / STORAGE_BLK_SIZ) >> 8) & 0xFF;                // NumberOfSectors16
-	}
-	
-  boot_sec[32] = ((size_in_kb * 1024 / STORAGE_BLK_SIZ) & 0xFF) + FAT_FILE_DATA_BLK; // NumberOfSectors32
-  boot_sec[33] = ((size_in_kb * 1024 / STORAGE_BLK_SIZ) >> 8) & 0xFF;                // NumberOfSectors32
-  boot_sec[34] = ((size_in_kb * 1024 / STORAGE_BLK_SIZ) >> 16) & 0xFF;               // NumberOfSectors32
-}
-
 void key_led(uint32_t blk)
 {
   uint32_t blink_ = blk;
@@ -356,12 +343,12 @@ bool prepare_device(Media_mode mde)
   {
   case BACKUP:
     Wr_Protect = 1;
-    if (Prepare_FAT(flschip->name, "BACKUP"))
+    if (Prepare_FAT(flschip->total_size, flschip->name, "BACKUP"))
       Error_Handler();
     break;
   case VERIFY:
     Wr_Protect = 0;
-    if (Prepare_FAT(NULL, "VERIFY"))
+    if (Prepare_FAT(flschip->total_size, NULL, "VERIFY"))
       Error_Handler();
     break;
   case PROG:
@@ -400,12 +387,12 @@ bool prepare_device(Media_mode mde)
 				ReadStatusReg(CMD_READ_STATUS3, &sr);
 				sprintf((char *)&str_buf[strlen((char *)&str_buf[0])], " SR3_0x%X ", sr);
 			}	
-			if (Prepare_FAT((char *)&str_buf[0], "ERROR "))
+			if (Prepare_FAT(flschip->total_size, (char *)&str_buf[0], "ERROR "))
 				Error_Handler();
     }
     else
     {
-      if (Prepare_FAT(NULL, "PROG  "))
+      if (Prepare_FAT(flschip->total_size, NULL, "PROG  "))
         Error_Handler(); // flash erased OK!
     }
     break;
@@ -414,13 +401,13 @@ bool prepare_device(Media_mode mde)
     if (!(jdc_id_.man_id == 0xFF && (jdc_id_.dev_id == 0xFFFF | jdc_id_.dev_id == 0xFF | jdc_id_.dev_id == 0x00)))
     {
       sprintf((char *)&str_buf[0], "unknown SPI chip manId 0x%X devId 0x%X", jdc_id_.man_id, jdc_id_.dev_id);
-      if (Prepare_FAT((char *)&str_buf[0], "ERROR "))
+      if (Prepare_FAT(1024, (char *)&str_buf[0], "ERROR "))
         Error_Handler();
     }
     // if the chip is not recognized and the ID is not readable
     else
     {
-      if (Prepare_FAT("unknown SPI chip or wrong connections", "ERROR "))
+      if (Prepare_FAT(1024, "unknown SPI chip or wrong connections", "ERROR "))
         Error_Handler();
     }
     break;
@@ -482,16 +469,16 @@ bool process_complete(Media_mode mde)
           device_mode = INFO;
 					USBD_UsrLog("\n\r device_mode -> %s", getModeName(device_mode));
           if (error_sts)
-            sts = Prepare_FAT("Error during programming", "ERROR ");
+            sts = Prepare_FAT(flschip->total_size, "Error during programming", "ERROR ");
           else if (!(CRCValue_nominal == CRCValue_actual))
           {
             if (mde == VERIFY)
-              sts = Prepare_FAT("CRC error after verifing", "ERROR ");
+              sts = Prepare_FAT(flschip->total_size, "CRC error after verifing", "ERROR ");
             else
-              sts = Prepare_FAT("CRC error after programming", "ERROR ");
+              sts = Prepare_FAT(flschip->total_size, "CRC error after programming", "ERROR ");
           }
           else
-            sts = Prepare_FAT("Error during programming-verifing", "ERROR ");
+            sts = Prepare_FAT(flschip->total_size,"Error during programming-verifing", "ERROR ");
           if (sts)
             Error_Handler(); // error on prepare fat
           HAL_Delay(50);
@@ -505,9 +492,9 @@ bool process_complete(Media_mode mde)
           device_mode = INFO;
 					USBD_UsrLog("\n\r device_mode -> %s", getModeName(device_mode));
           if (mde == PROG)
-            sts = Prepare_FAT("Programming completed successfully", "GOOD ");
+            sts = Prepare_FAT(flschip->total_size, "Programming completed successfully", "GOOD ");
           else if (mde == VERIFY)
-            sts = Prepare_FAT("Verifing completed successfully", "GOOD ");
+            sts = Prepare_FAT(flschip->total_size, "Verifing completed successfully", "GOOD ");
           if (sts)
             Error_Handler(); // error on prepare fat
           HAL_Delay(50);
@@ -521,6 +508,7 @@ bool process_complete(Media_mode mde)
     }
   }
 }
+
 
 /* USER CODE END 4 */
 

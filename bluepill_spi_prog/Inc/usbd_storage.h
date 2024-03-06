@@ -61,8 +61,8 @@
 #define NUMBER_OF_FAT_TABLES	           02U
 #define FAT_DIRECTORY_BLK                (SECTOR_PER_FAT*NUMBER_OF_FAT_TABLES+1)//15U
 #define MAX_ROOT_DIR_ENTRIES             0x0EU   //boot_sec[17]
-#define FAT_FILE_DATA_BLK                29U //FAT_DIRECTORY_BLK + MAX_ROOT_DIR_ENTRIES/0x10
-#define FAT_OFFSET                       FAT_FILE_DATA_BLK*STORAGE_BLK_SIZ  //0A 0x1400   1B 3600
+#define FAT_FILE_DATA_BLK                (FAT_DIRECTORY_BLK + MAX_ROOT_DIR_ENTRIES) //29U
+#define FAT_OFFSET                       (FAT_FILE_DATA_BLK*STORAGE_BLK_SIZ)  //0A 0x1400   1B 3600
 #define END_OF_CHAIN                     (0xfff)
 
 typedef enum {
@@ -142,6 +142,43 @@ typedef  struct FAT12_FAT_TABLE {  //struct size  6 bytes for 4 clusters
 } __attribute__((packed)) FAT12_FAT_TABLE;
 
 
+// Media descriptor
+typedef enum uint8_t
+{
+    FLOPPY                        = 0xf0,
+    HARD_DRIVE                    = 0xf8,
+    FLOPPY_320K_1                 = 0xfa,
+    FLOPPY_640K                   = 0xfb,
+    FLOPPY_180K                   = 0xfc,
+    FLOPPY_360K                   = 0xfd,
+    FLOPPY_160K                   = 0xfe,
+    FLOPPY_320K_2                 = 0xff,
+} MEDIA ;
+
+typedef struct  FAT_BOOTSECTOR{
+    uint8_t   jmp[3];                
+    char      OemName[8];
+    uint16_t  BytesPerSector;        // legal == { 512, 1024, 2048, 4096 }
+    uint8_t   SectorsPerCluster;     // legal == { 1, 2, 4, 8, 16, 32, 64, 128 }
+    uint16_t  ReservedSectors;       // must not be zero; legal for FAT12/16 == { 1 }, typically 32 for FAT32
+    uint8_t   NumberOfFatTables;     // must not be zero; warn if this is not set to the value 1 or 2
+    uint16_t  MaxRootDirEntries;     // legal for FAT12/16 == N * (BytesPerSector / 32), N is non-zero; must be {0} for FAT32
+    uint16_t  NumberOfSectors16;     // must be {0} for FAT32; if {0}, then NumberOfSectors32 must be non-zero
+    MEDIA     MediaDescriptor;       // legacy
+    uint16_t  SectorsPerFat16;       // must be {0} for FAT32; must be non-zero for FAT12/16
+    uint16_t  SectorsPerTrack;       // legacy
+    uint16_t  HeadsPerCylinder;      // legacy
+    uint32_t  NumHiddenSectors;      // legacy
+    uint32_t  NumberOfSectors32;     // must be non-zero for FAT32; must be >= 0x10000 if NumberOfSectors16 is zero
+	  uint8_t   DriveNumber;
+    uint8_t   Unused;
+    uint8_t   ExtBootSignature;
+    uint32_t  SerialNumber;          // only valid if ExtBootSignature == 0x29
+    char      VolumeLabel[11];       // only valid if ExtBootSignature == 0x29
+    char      FileSystemLabel[8];
+	  uint8_t   BootCode[448];         // 420 for FAT32, 448 for FAT16/12
+    uint16_t  EndOfSectorMarker;     //0xAA55
+	} __attribute__((packed)) FAT_BOOTSECTOR;
 
 
 /* Exported types ------------------------------------------------------------*/
@@ -155,7 +192,7 @@ int8_t STORAGE_IsWriteProtected(uint8_t lun);
 int8_t STORAGE_Read (uint8_t lun, uint8_t * buf, uint32_t blk_addr, uint16_t blk_len);
 int8_t STORAGE_Write(uint8_t lun, uint8_t * buf, uint32_t blk_addr, uint16_t blk_len);
 int8_t STORAGE_GetMaxLun(void);
-int8_t Prepare_FAT(const char * fil_str, const char * dsk_lbl);
+int8_t Prepare_FAT(uint32_t size_in_kb, const char *fil_str, const char *dsk_lbl);
 int8_t create_fs(const char * fil_str);
 
 extern USBD_StorageTypeDef  USBD_DISK_fops;

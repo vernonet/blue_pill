@@ -92,7 +92,12 @@ Media_mode device_mode;
 extern uint32_t spi_speed;
 ARM_SPI_STATUS sts;
 
-uint8_t FAT[STORAGE_BLK_SIZ * 26] __attribute__((aligned(4))) = {0}; //__attribute__((section(".ARM.__at_0x20010e39")));//
+uint8_t FAT[STORAGE_BLK_SIZ * (FAT_DIRECTORY_BLK+1)] __attribute__((aligned(4))) = {
+
+    0xEB, 0x3C, 0x90, 0x4D, 0x53, 0x44, 0x4F, 0x53, 0x35, 0x2E, 0x30, 0x00, 0x02, 0x40, 0x01, 0x00,
+    0x02, 0xE0, 0x00, 0x00, 0x00, 0xF8, 0x07, 0x00, 0x11, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x1D, 0x00, 0x02, 0x00, 0x80, 0x00, 0x29, 0xFC, 0xEE, 0xCB, 0x4C, 0x53, 0x50, 0x49, 0x2D, 0x50,
+    0x52, 0x4F, 0x47, 0x20, 0x20, 0x20, 0x46, 0x41, 0x54, 0x31, 0x32, 0x20, 0x20, 0x20}; 
 
 extern const struct flashchip flashchips[];
 extern const struct flashchip *flschip;
@@ -101,15 +106,8 @@ FRESULT res;
 FRESULT check;
 FATFS *fs; 
 
-unsigned char boot_sec[] = { //188
- 
-    0xEB, 0x3C, 0x90, 0x4D, 0x53, 0x44, 0x4F, 0x53, 0x35, 0x2E, 0x30, 0x00, 0x02, 0x40, 0x01, 0x00,
-    0x02, 0xE0, 0x00, 0x00, 0x00, 0xF8, 0x07, 0x00, 0x11, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x1D, 0x00, 0x02, 0x00, 0x80, 0x00, 0x29, 0xFC, 0xEE, 0xCB, 0x4C, 0x53, 0x50, 0x49, 0x2D, 0x50,
-    0x52, 0x4F, 0x47, 0x20, 0x20, 0x20, 0x46, 0x41, 0x54, 0x31, 0x32, 0x20, 0x20, 0x20,
-	  0xF0, 0xFF, 0xFF, 0x00, 
-	  0x00, 0x00, 0x55, 0xAA 
-};
+const unsigned char second_sec[4] = {0xF0, 0xFF, 0xFF, 0x00};	
+		
  const unsigned char Label_disk[32] = {
     0x53, 0x50, 0x49, 0x2D, 0x50, 0x52, 0x4F, 0x47, 0x20, 0x20, 0x20, 0x08, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x53, 0xA8, 0x4E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
@@ -159,7 +157,7 @@ int8_t create_fs(const char * fil_str) {   //create fat for BACKUP, INFO device 
 	uint16_t clusters ;
 	FAT12_FAT_TABLE * tbl	= (FAT12_FAT_TABLE*)&FAT[0x200+3];	
 	
-	for (int k=0;k<2;k++) {
+	for (int k=0;k<NUMBER_OF_FAT_TABLES;k++) {
 	i=0;
 	tbl	= (FAT12_FAT_TABLE*)&FAT[0x203+k*SECTOR_PER_FAT*STORAGE_BLK_SIZ];
 	clusters = (*(uint32_t*)&FAT[0x20])/(*(uint8_t*)&FAT[0x0d]);	//cluster cnt;
@@ -337,7 +335,7 @@ int8_t STORAGE_Read(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
         memset(buf, 0, STORAGE_BLK_SIZ * blk_len);
     }
     // fill zeros if blk_addr>sizeof(FAT)/STORAGE_BLK_SIZ
-    else if (blk_addr > sizeof(FAT) / STORAGE_BLK_SIZ)
+    else if (blk_addr >= sizeof(FAT) / STORAGE_BLK_SIZ)
       memset(buf, 0, STORAGE_BLK_SIZ * blk_len);
     else
     {
@@ -365,17 +363,26 @@ int8_t Sector_Erase(void)
   return 0;
 }
 
-int8_t Prepare_FAT(const char *fil_str, const char *dsk_lbl)
+int8_t Prepare_FAT(uint32_t size_in_kb, const char *fil_str, const char *dsk_lbl)
 {
   int8_t ret = 0;
-
-  memset(FAT, 0, sizeof(FAT));
-
-  ret = Write_LL((uint32_t)&FAT[0], &boot_sec[0], sizeof(boot_sec) - 4 * 2);
-  ret |= Write_LL((uint32_t)&FAT[0] + 0x01FC, &boot_sec[sizeof(boot_sec) - 4 * 1], 4 * 1);
-  ret |= Write_LL((uint32_t)&FAT[0] + (STORAGE_BLK_SIZ * 1), &boot_sec[sizeof(boot_sec) - 4 * 2], 4 * 1);                        //+0x0200
-  ret |= Write_LL((uint32_t)&FAT[0] + (STORAGE_BLK_SIZ * (SECTOR_PER_FAT * 1 + 1)), &boot_sec[sizeof(boot_sec) - 4 * 2], 4 * 1); //+0x1000
-  ret |= Write_LL((uint32_t)&FAT[0] + (STORAGE_BLK_SIZ * FAT_DIRECTORY_BLK), (uint8_t *)&Label_disk[0], sizeof(Label_disk));     //+0x1E00
+  FAT_BOOTSECTOR * boot_sct;	
+	uint32_t sec_count;
+	
+	sec_count = (size_in_kb * 1024 / STORAGE_BLK_SIZ) + FAT_FILE_DATA_BLK;
+	boot_sct = (FAT_BOOTSECTOR *)&FAT[0];
+	if (sec_count < 0x10000) {  //only two bytes,  <=65535 sectors
+		boot_sct->NumberOfSectors16 = sec_count;
+	 }
+	boot_sct->NumberOfFatTables = NUMBER_OF_FAT_TABLES;
+	boot_sct->NumberOfSectors32 = sec_count;	
+	boot_sct->EndOfSectorMarker = 0xAA55;
+	memset(&FAT[STORAGE_BLK_SIZ], 0, sizeof(FAT) - STORAGE_BLK_SIZ); //clear any other data
+  memcpy(&FAT[0] + STORAGE_BLK_SIZ, &second_sec[0], sizeof second_sec);                                 //+0x0200
+	if (NUMBER_OF_FAT_TABLES == 2) {
+		memcpy(&FAT[0] + STORAGE_BLK_SIZ * (SECTOR_PER_FAT * 1 + 1), &second_sec[0], sizeof second_sec);      //+0x1000
+	}
+  memcpy(&FAT[0] + STORAGE_BLK_SIZ * FAT_DIRECTORY_BLK, (uint8_t *)&Label_disk[0], sizeof(Label_disk)); //+0x1E00
 
   if (dsk_lbl)
     memcpy(&FAT[0] + STORAGE_BLK_SIZ * FAT_DIRECTORY_BLK + 4, dsk_lbl, 6);
@@ -517,7 +524,7 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
 
       if (file_size > 0)
       {
-        if (blk_addr == (29 - 1) + mod + file_size / STORAGE_BLK_SIZ)
+        if (blk_addr == (FAT_FILE_DATA_BLK - 1) + mod + file_size / STORAGE_BLK_SIZ)
         { // If the file is recorded fully
           Wr_Protect = 1;
           complet = 1;
