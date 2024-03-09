@@ -119,6 +119,9 @@ const unsigned char backup_fil[28] = {
 };
 
 int32_t file_size = 0;
+bool fat_directory_blk_written = false;
+//bool last_data_blk_written     = false;
+volatile uint32_t wr_data_adr = 0;
 
 USBD_StorageTypeDef USBD_DISK_fops = {
     STORAGE_Init,
@@ -426,11 +429,21 @@ static int8_t Write_LL(uint32_t dest, uint8_t *src, uint16_t len)
   // if writing data
   if (dest < (flschip->total_size * 1024 + FAT_OFFSET))
   {
-    if (device_mode == BACKUP || device_mode == VERIFY || device_mode == INFO)
+    if (device_mode == BACKUP || device_mode == INFO)  {
       return ARM_DRIVER_OK;
+		}
+		else if (device_mode == VERIFY) {
+			stat = (int8_t)VerifyData(dest - FAT_OFFSET, src32, len);
+      if (stat != ARM_DRIVER_OK)
+        return stat;
+		}
+		else if (device_mode == PROG) {
     stat = (int8_t)ProgramData(dest - FAT_OFFSET, src32, len);
     if (stat != ARM_DRIVER_OK)
       return stat;
+	 }
+		else
+    return -1;  //unknown mode
   }
   // else writing  FAT
   else if ((dest <= ((uint32_t)&FAT[0] + sizeof(FAT))) && (dest >= ((uint32_t)&FAT[0])))
@@ -475,6 +488,7 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
       {
         if (blk_addr == FAT_DIRECTORY_BLK && (device_mode == PROG || device_mode == VERIFY))
         {
+					USBD_UsrLog("\n\r file_size offset 3C -> 0x%X", *(uint32_t *)(buf + 0x1C + 0x20));
           // 0x1C- file_size offset
           if (*(uint32_t *)(buf + 0x1C + 0x20))
           {
@@ -488,6 +502,8 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
 
             if (file_size)
             {
+							fat_directory_blk_written = true;
+							USBD_UsrLog("\n\r file_size -> 0x%X wr_data_adr -> 0x%X", file_size, wr_data_adr);
               if (file_size > flschip->total_size * 1024)
               {
                 USBD_UsrLog("\n\r ERROR, file size > flash size!!!");
@@ -498,8 +514,16 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
                 mod = 1;
               else
                 mod = 0;
+							//for linux
+						  //if (blk_addr_max == (FAT_FILE_DATA_BLK - 1) + mod + file_size / STORAGE_BLK_SIZ) { //==
+							if (wr_data_adr == (file_size / STORAGE_BLK_SIZ + mod)*STORAGE_BLK_SIZ ) { //==
+								USBD_UsrLog("\n\r Complet for linux");
+								Wr_Protect = 1;
+							  complet = 1;
+								fat_directory_blk_written = false;
+								wr_data_adr = 0;
+							}
             }
-            //								printf ("\n\r F_size -> %x", file_size);
           }
         }
       }
@@ -509,8 +533,15 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
         adr = FLASH_DISK_START_ADDRESS; // else writing data
       // if block number >FAT_DIRECTORY_BLK & <FAT_FILE_DATA_BLK -> skip writing
       if (!(blk_addr<FAT_FILE_DATA_BLK & blk_addr> FAT_DIRECTORY_BLK))
-      {
-        stat = Write_LL((adr) + blk_addr * STORAGE_BLK_SIZ, buf, blk_len * STORAGE_BLK_SIZ);
+      {	
+				if (blk_addr >= FAT_FILE_DATA_BLK) {
+					stat = Write_LL(wr_data_adr + FAT_OFFSET, buf, blk_len * STORAGE_BLK_SIZ);
+				  wr_data_adr += blk_len * STORAGE_BLK_SIZ;
+				}
+				else {
+         stat = Write_LL((adr) + blk_addr * STORAGE_BLK_SIZ, buf, blk_len * STORAGE_BLK_SIZ);
+				}
+		
         if (stat)
         {
           error_sts = stat;
@@ -524,12 +555,16 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
 
       if (file_size > 0)
       {
-        if (blk_addr == (FAT_FILE_DATA_BLK - 1) + mod + file_size / STORAGE_BLK_SIZ)
-        { // If the file is recorded fully
-          Wr_Protect = 1;
-          complet = 1;
-          //					backup_mode = true;
-        }
+					if (wr_data_adr == (file_size / STORAGE_BLK_SIZ + mod)*STORAGE_BLK_SIZ ) { //==
+						    USBD_UsrLog("\n\r wr_data_adr 0x%X file_size -> 0x%X", wr_data_adr, file_size);
+								if (fat_directory_blk_written) {
+									USBD_UsrLog("\n\r Complet for windows");
+									Wr_Protect = 1;
+									complet = 1;
+									fat_directory_blk_written = false;
+									wr_data_adr = 0;
+						 }
+					}
       }
     }
     else

@@ -624,6 +624,25 @@ transfer_error:
 	LED_Off();                 //indicate reading
   return ARM_DRIVER_ERROR;
 }
+ 
+/**
+  \fn          int32_t ARM_Flash_VerifyData (uint32_t addr, const void *data, uint32_t cnt)
+  \brief       Verifying data.
+  \param[in]   addr  Data address.
+  \param[in]   data  Pointer to a buffer containing the data to be programmed to Flash.
+  \param[in]   cnt   Number of data items to program.
+  \return      number of data items vefrified or \ref execution_status
+*/
+int32_t VerifyData (uint32_t addr, const void *data, uint32_t cnt) {
+
+	 //int32_t  status;	 
+	 
+	 if ((addr & 0x1fff)  == 0) LED_Toggle();                //indicate verify
+	 
+	 SPI_UsrLog ("\n verf_addr -> 0x%05x   cnt -> 0x%03x", addr, cnt);
+		
+   return (cnt);
+}
 
 
 /**
@@ -671,6 +690,7 @@ transfer_error:
 		 SPI_UsrLog("\n ProgramData error -> %d", status);
 	 }
 	 
+	 SPI_UsrLog("\n ProgramData status -> %d", status);
   
   return (status);
 }

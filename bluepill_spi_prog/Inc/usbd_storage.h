@@ -58,7 +58,7 @@
 #define STORAGE_BLK_NBR                  32797  //32768//640      //32768//    
 #define STORAGE_BLK_SIZ                  0x200                               
 #define SECTOR_PER_FAT                   07U
-#define NUMBER_OF_FAT_TABLES	           02U
+#define NUMBER_OF_FAT_TABLES	           01U
 #define FAT_DIRECTORY_BLK                (SECTOR_PER_FAT*NUMBER_OF_FAT_TABLES+1)//15U
 #define MAX_ROOT_DIR_ENTRIES             0x0EU   //boot_sec[17]
 #define FAT_FILE_DATA_BLK                (FAT_DIRECTORY_BLK + MAX_ROOT_DIR_ENTRIES) //29U

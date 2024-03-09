@@ -48,6 +48,7 @@ typedef struct _JEDEC_ID {
 
 int32_t ReadData (uint32_t addr, void *data, uint32_t cnt);
 int32_t ProgramData (uint32_t addr, const void *data, uint32_t cnt);
+int32_t VerifyData (uint32_t addr, const void *data, uint32_t cnt);
 int32_t ReadSfdpReg (uint8_t cmd, uint32_t* _size);
 int32_t ReadJedecId (uint8_t cmd, JEDEC_ID* jdc_id);
 int32_t ReadIdSST ( uint8_t cmd, JEDEC_ID* jdc_id);

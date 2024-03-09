@@ -329,13 +329,14 @@ bool prepare_device(Media_mode mde)
 	int32_t feature_bits = flschip->feature_bits;
 
   complet = 0;
+	file_size = 0;
   if (mde != BACKUP && mde != INFO)
   {
     HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_RESET); // USB DP PULLDOWN
     MX_USB_DEVICE_DeInit();
   }
 
-  HAL_Delay(100);
+  HAL_Delay(200);
   device_mode = mde;
 	USBD_UsrLog("\n\r device_mode -> %s", getModeName(mde));
 
@@ -348,6 +349,7 @@ bool prepare_device(Media_mode mde)
     break;
   case VERIFY:
     Wr_Protect = 0;
+	  HAL_Delay(1000);
     if (Prepare_FAT(flschip->total_size, NULL, "VERIFY"))
       Error_Handler();
     break;
