@@ -481,9 +481,11 @@ int32_t Uninitialize (void) {
   \param[in]   cnt   Number of data items to read.
   \return      number of data items read or \ref execution_status
 */
- int32_t ReadData (uint32_t addr, void *data, uint32_t cnt) {
+ int32_t ReadData (uint32_t addr, void *data, uint32_t cnt, bool blink) {
 	 
-	if ((addr & 0x3fff)  == 0) LED_Toggle();//indicate reading
+	if (blink) {
+		if ((addr & 0x1fff)  == 0) LED_Toggle();//indicate reading   //0x3fff
+	}
 	 
 	SPI_UsrLog ("\n rd_addr -> 0x%05x   cnt -> 0x%03x", addr, cnt); 
   
@@ -633,11 +635,13 @@ transfer_error:
   \param[in]   cnt   Number of data items to program.
   \return      number of data items vefrified or \ref execution_status
 */
-int32_t VerifyData (uint32_t addr, const void *data, uint32_t cnt) {
+int32_t VerifyData (uint32_t addr, const void *data, uint32_t cnt, bool blink) {
 
 	 //int32_t  status;	 
 	 
-	 if ((addr & 0x1fff)  == 0) LED_Toggle();                //indicate verify
+  if (blink) {
+	  if ((addr & 0x1fff)  == 0) LED_Toggle();                //indicate verify
+  }
 	 
 	 SPI_UsrLog ("\n verf_addr -> 0x%05x   cnt -> 0x%03x", addr, cnt);
 		
@@ -653,11 +657,13 @@ int32_t VerifyData (uint32_t addr, const void *data, uint32_t cnt) {
   \param[in]   cnt   Number of data items to program.
   \return      number of data items programmed or \ref execution_status
 */
- int32_t ProgramData (uint32_t addr, const void *data, uint32_t cnt) {
+ int32_t ProgramData (uint32_t addr, const void *data, uint32_t cnt, bool blink) {
 	 //int32_t sts;
 	 int32_t  status;	 
 	 
-	 if ((addr & 0x1fff)  == 0) LED_Toggle();                //indicate writing
+   if (blink) {
+		 if ((addr & 0x1fff)  == 0) LED_Toggle();                //indicate writing
+	 }
 	 
 	 if (!(flschip->write))  {
 		  SPI_UsrLog("\n No write support!");
@@ -1301,7 +1307,7 @@ static int32_t isErased (void) {
 	memset(buf_, 0xff, sizeof(buf_));
 	for (addr=0; addr<flschip->total_size*1024;) {
 		//if ((addr & 0x3fff)  == 0) BSP_LED_Toggle(LED3);
-		ReadData(addr, (uint32_t *)&buf[0], sizeof(buf));
+		ReadData(addr, (uint32_t *)&buf[0], sizeof(buf), true);
 		status = memcmp(buf, buf_, sizeof(buf));
 		//status += memcmp_(buf, 0xffffffff, sizeof(buf));
 		if (status) break;

@@ -67,6 +67,7 @@ SPI_HandleTypeDef hspi1;
 /* Private variables ---------------------------------------------------------*/
 uint8_t status, st;
 __IO uint32_t CRCValue_actual = 0;  // calculated after write flash
+__IO uint32_t CRCValue_actual_2 = 0;  // calculated during write flash
 __IO uint32_t CRCValue_nominal = 0; // calculated before write flash
 // uint8_t crc_buf[0x200] __attribute__((aligned(4)));
 uint8_t *crc_buf;
@@ -348,12 +349,14 @@ bool prepare_device(Media_mode mde)
       Error_Handler();
     break;
   case VERIFY:
+		CRCValue_actual_2 = 0;
     Wr_Protect = 0;
 	  HAL_Delay(1000);
     if (Prepare_FAT(flschip->total_size, NULL, "VERIFY"))
       Error_Handler();
     break;
   case PROG:
+		CRCValue_actual_2 = 0;
     Wr_Protect = 0;
     stat = EraseChip();
     if (stat)
@@ -450,29 +453,30 @@ bool process_complete(Media_mode mde)
       HAL_Delay(10);
       HAL_GPIO_WritePin(USB_DP_PORT, USB_DP_PIN, GPIO_PIN_RESET); // USB DP PULLDOWN
       MX_USB_DEVICE_DeInit();
-      crc_buf = malloc(CRC_BUFF_SZE);
+			HAL_Delay(2000);
       if ((file_size > STORAGE_BLK_SIZ) && (file_size <= (flschip->total_size * 1024)))
       {
-        volatile uint32_t adr = 0, len = 0;
-        while (adr < file_size)
-        {
-          if (file_size - adr > (sizeof(crc_buf[0]) * CRC_BUFF_SZE))
-            len = sizeof(crc_buf[0]) * CRC_BUFF_SZE;
-          else
-            len = file_size - adr;
-          ReadData(adr, (uint32_t *)crc_buf, len); // sizeof(crc_buf)
-          CRCValue_actual = CalcCRC32(crc_buf, len, CRCValue_actual);
-          adr += len;
-        }
-        free(crc_buf);
-        if ((error_sts) || !(CRCValue_nominal == CRCValue_actual) || (error))
+//        volatile uint32_t adr = 0, len = 0;
+//				crc_buf = malloc(CRC_BUFF_SZE);
+//        while (adr < file_size)
+//        {
+//          if (file_size - adr > (sizeof(crc_buf[0]) * CRC_BUFF_SZE))
+//            len = sizeof(crc_buf[0]) * CRC_BUFF_SZE;
+//          else
+//            len = file_size - adr;
+//          ReadData(adr, (uint32_t *)crc_buf, len); // sizeof(crc_buf)
+//          CRCValue_actual = CalcCRC32(crc_buf, len, CRCValue_actual);
+//          adr += len;
+//        }
+//        free(crc_buf);
+        if ((error_sts) || !(CRCValue_nominal == CRCValue_actual_2) || (error))
         {
           // error CRC or any other error
           device_mode = INFO;
 					USBD_UsrLog("\n\r device_mode -> %s", getModeName(device_mode));
           if (error_sts)
             sts = Prepare_FAT(flschip->total_size, "Error during programming", "ERROR ");
-          else if (!(CRCValue_nominal == CRCValue_actual))
+          else if (!(CRCValue_nominal == CRCValue_actual_2))
           {
             if (mde == VERIFY)
               sts = Prepare_FAT(flschip->total_size, "CRC error after verifing", "ERROR ");

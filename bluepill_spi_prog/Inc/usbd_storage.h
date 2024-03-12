@@ -56,13 +56,17 @@
 
 #define STORAGE_LUN_NBR                  1
 #define STORAGE_BLK_NBR                  32797  //32768//640      //32768//    
-#define STORAGE_BLK_SIZ                  0x200                               
+#define STORAGE_BLK_SIZ                  0x200    
+#define SECTORS_PER_CLUSTER              64
 #define SECTOR_PER_FAT                   07U
 #define NUMBER_OF_FAT_TABLES	           01U
 #define FAT_DIRECTORY_BLK                (SECTOR_PER_FAT*NUMBER_OF_FAT_TABLES+1)//15U
-#define MAX_ROOT_DIR_ENTRIES             0x0EU   //boot_sec[17]
-#define FAT_FILE_DATA_BLK                (FAT_DIRECTORY_BLK + MAX_ROOT_DIR_ENTRIES) //29U
+#define MAX_ROOT_DIR_ENTRIES             0xE0U   //boot_sec[17]  0x0E
+#define ROOT_DIR_SIZE                    ((MAX_ROOT_DIR_ENTRIES*32)/STORAGE_BLK_SIZ)  //0x0EU RootDirSectors = (BPB_RootEntCnt * 32) / BPB_BytsPerSec
+#define FAT_FILE_DATA_BLK                (FAT_DIRECTORY_BLK + ROOT_DIR_SIZE) //29U
+#define FAT_FILE_DATA_BLK_LIN            (FAT_FILE_DATA_BLK + SECTORS_PER_CLUSTER)
 #define FAT_OFFSET                       (FAT_FILE_DATA_BLK*STORAGE_BLK_SIZ)  //0A 0x1400   1B 3600
+#define FAT_OFFSET_LIN                   (FAT_FILE_DATA_BLK_LIN*STORAGE_BLK_SIZ)
 #define END_OF_CHAIN                     (0xfff)
 
 typedef enum {

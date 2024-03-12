@@ -87,12 +87,12 @@ uint16_t block_num_cnt = 0;
 extern uint8_t complet, error, error_sts;
 extern uint8_t inter;
 volatile uint32_t ttt = 0;
-extern __IO uint32_t CRCValue_nominal;
+extern __IO uint32_t CRCValue_nominal, CRCValue_actual_2;
 Media_mode device_mode;
 extern uint32_t spi_speed;
 ARM_SPI_STATUS sts;
 
-uint8_t FAT[STORAGE_BLK_SIZ * (FAT_DIRECTORY_BLK+1)] __attribute__((aligned(4))) = {
+uint8_t FAT[STORAGE_BLK_SIZ * (FAT_DIRECTORY_BLK+2)] __attribute__((aligned(4))) = {
 
     0xEB, 0x3C, 0x90, 0x4D, 0x53, 0x44, 0x4F, 0x53, 0x35, 0x2E, 0x30, 0x00, 0x02, 0x40, 0x01, 0x00,
     0x02, 0xE0, 0x00, 0x00, 0x00, 0xF8, 0x07, 0x00, 0x11, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -122,6 +122,8 @@ int32_t file_size = 0;
 bool fat_directory_blk_written = false;
 //bool last_data_blk_written     = false;
 volatile uint32_t wr_data_adr = 0;
+uint32_t fat_file_data_blk = 0, fat_offset = 0;
+bool file_data_blk_changed = false;
 
 USBD_StorageTypeDef USBD_DISK_fops = {
     STORAGE_Init,
@@ -268,7 +270,10 @@ int8_t STORAGE_GetCapacity(uint8_t lun, uint32_t *block_num,
   switch (lun)
   {
   case 0:
-    *block_num = (flschip) ? flschip->total_size * 1024 / STORAGE_BLK_SIZ + FAT_FILE_DATA_BLK : 1024 * 1024 / STORAGE_BLK_SIZ + FAT_FILE_DATA_BLK; // 0x1D;   //STORAGE_BLK_NBR;
+		if (device_mode == PROG || device_mode == VERIFY) {
+    *block_num = (flschip) ? flschip->total_size * 1024 / STORAGE_BLK_SIZ + FAT_FILE_DATA_BLK_LIN : 1024 * 1024 / STORAGE_BLK_SIZ + FAT_FILE_DATA_BLK_LIN; // 0x1D;   //STORAGE_BLK_NBR;
+		}
+		else *block_num = (flschip) ? flschip->total_size * 1024 / STORAGE_BLK_SIZ + FAT_FILE_DATA_BLK : 1024 * 1024 / STORAGE_BLK_SIZ + FAT_FILE_DATA_BLK;
     *block_size = STORAGE_BLK_SIZ;
     break;
   case 1:
@@ -333,7 +338,7 @@ int8_t STORAGE_Read(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
     if (blk_addr >= FAT_FILE_DATA_BLK && device_mode == BACKUP)
     {
       if (flschip)
-        ReadData((blk_addr - FAT_FILE_DATA_BLK) * STORAGE_BLK_SIZ, buf32, STORAGE_BLK_SIZ * blk_len);
+        ReadData((blk_addr - FAT_FILE_DATA_BLK) * STORAGE_BLK_SIZ, buf32, STORAGE_BLK_SIZ * blk_len, true);
       else
         memset(buf, 0, STORAGE_BLK_SIZ * blk_len);
     }
@@ -372,11 +377,18 @@ int8_t Prepare_FAT(uint32_t size_in_kb, const char *fil_str, const char *dsk_lbl
   FAT_BOOTSECTOR * boot_sct;	
 	uint32_t sec_count;
 	
-	sec_count = (size_in_kb * 1024 / STORAGE_BLK_SIZ) + FAT_FILE_DATA_BLK;
+	wr_data_adr = 0;
+	fat_file_data_blk = FAT_FILE_DATA_BLK;
+	fat_offset = FAT_OFFSET;
+	if (device_mode == PROG || device_mode == VERIFY)
+	   sec_count = (size_in_kb * 1024 / STORAGE_BLK_SIZ) + FAT_FILE_DATA_BLK_LIN;  //FAT_FILE_DATA_BLK
+	else 
+		sec_count = (size_in_kb * 1024 / STORAGE_BLK_SIZ) + FAT_FILE_DATA_BLK;
 	boot_sct = (FAT_BOOTSECTOR *)&FAT[0];
 	if (sec_count < 0x10000) {  //only two bytes,  <=65535 sectors
 		boot_sct->NumberOfSectors16 = sec_count;
 	 }
+	boot_sct->SectorsPerCluster = SECTORS_PER_CLUSTER;
 	boot_sct->NumberOfFatTables = NUMBER_OF_FAT_TABLES;
 	boot_sct->NumberOfSectors32 = sec_count;	
 	boot_sct->EndOfSectorMarker = 0xAA55;
@@ -418,29 +430,46 @@ static int8_t Write_LL(uint32_t dest, uint8_t *src, uint16_t len)
 {
   int8_t stat;
   uint32_t *src32 = (uint32_t *)src;
+	uint8_t * crc_buf_;
 
   // if the file size is not a multiple of the sector size, last block
-  if ((modulo) && ((dest - FAT_OFFSET) == (file_size - modulo)))
+  if ((modulo) && ((dest - fat_offset) == (file_size - modulo)))
   {
     // len = modulo;                   //chunk
     memset(src + modulo, FLASH_ERASED_VALUE, len - modulo);
   }
 
   // if writing data
-  if (dest < (flschip->total_size * 1024 + FAT_OFFSET))
+  if (dest < (flschip->total_size * 1024 + fat_offset))
   {
     if (device_mode == BACKUP || device_mode == INFO)  {
       return ARM_DRIVER_OK;
 		}
 		else if (device_mode == VERIFY) {
-			stat = (int8_t)VerifyData(dest - FAT_OFFSET, src32, len);
+			stat = (int8_t)VerifyData(dest - fat_offset, src32, len, false);
       if (stat != ARM_DRIVER_OK)
         return stat;
+			crc_buf_ = malloc(len);
+			if ((modulo) && ((dest - fat_offset) == ((file_size / STORAGE_BLK_SIZ)*STORAGE_BLK_SIZ))){
+				len = modulo;
+				//USBD_UsrLog("\n\r len = modulo");
+			}
+		  ReadData(dest - fat_offset, (uint32_t *)crc_buf_, len, true); // sizeof(crc_buf)
+		  CRCValue_actual_2 = CalcCRC32_n(crc_buf_, len, CRCValue_actual_2, CRC_BUFF_SZE);
+		  free(crc_buf_);
 		}
 		else if (device_mode == PROG) {
-    stat = (int8_t)ProgramData(dest - FAT_OFFSET, src32, len);
-    if (stat != ARM_DRIVER_OK)
-      return stat;
+			stat = (int8_t)ProgramData(dest - fat_offset, src32, len, false);
+			if (stat != ARM_DRIVER_OK)
+				return stat;
+			crc_buf_ = malloc(len);
+			if ((modulo) && ((dest - fat_offset) == ((file_size / STORAGE_BLK_SIZ)*STORAGE_BLK_SIZ))){
+				len = modulo;
+				//USBD_UsrLog("\n\r len = modulo");
+			}
+			ReadData(dest - fat_offset, (uint32_t *)crc_buf_, len, true); // sizeof(crc_buf)
+			CRCValue_actual_2 = CalcCRC32_n(crc_buf_, len, CRCValue_actual_2, CRC_BUFF_SZE);
+			free(crc_buf_);
 	 }
 		else
     return -1;  //unknown mode
@@ -474,8 +503,31 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
     if (!(error))
     { //
       if (blk_addr >= FAT_FILE_DATA_BLK)
-      { // 0x3a00 file body
-        if ((modulo) && (blk_addr == (FAT_FILE_DATA_BLK + file_size / STORAGE_BLK_SIZ)))
+      { 
+				//determine the data block number, it may vary depending on the operating system
+				if (!file_data_blk_changed) {
+					switch (blk_addr)
+					{
+						case FAT_FILE_DATA_BLK:
+							fat_file_data_blk = FAT_FILE_DATA_BLK;
+						  fat_offset = FAT_OFFSET;
+						  file_data_blk_changed = true;
+							break;
+						case FAT_FILE_DATA_BLK_LIN:
+							fat_file_data_blk = FAT_FILE_DATA_BLK_LIN;
+						  fat_offset = FAT_OFFSET_LIN;
+						  file_data_blk_changed = true;
+							break;
+            default:
+							fat_file_data_blk = FAT_FILE_DATA_BLK;
+						  fat_offset = FAT_OFFSET;
+						  file_data_blk_changed = true;
+              break;
+					}
+					USBD_UsrLog("\n\r fat_file_data_blk -> %d", fat_file_data_blk);
+				}
+				// 0x3a00 file body
+        if ((modulo) && (blk_addr == (fat_file_data_blk + file_size / STORAGE_BLK_SIZ)))
         {
           // last block && not aligned
           CRCValue_nominal = CalcCRC32_n(buf, modulo, CRCValue_nominal, CRC_BUFF_SZE);
@@ -522,21 +574,27 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
 							  complet = 1;
 								fat_directory_blk_written = false;
 								wr_data_adr = 0;
+								file_data_blk_changed = false;
 							}
             }
           }
         }
       }
-      if (blk_addr < FAT_FILE_DATA_BLK)
-        adr = (uint32_t)&FAT[0]; // writing FAT
-      else
-        adr = FLASH_DISK_START_ADDRESS; // else writing data
+			
+			if (blk_addr < fat_file_data_blk)
+				adr = (uint32_t)&FAT[0]; // writing FAT
+			else
+				adr = FLASH_DISK_START_ADDRESS; // else writing data
+		
       // if block number >FAT_DIRECTORY_BLK & <FAT_FILE_DATA_BLK -> skip writing
-      if (!(blk_addr<FAT_FILE_DATA_BLK & blk_addr> FAT_DIRECTORY_BLK))
+      if (!(blk_addr<fat_file_data_blk & blk_addr> FAT_DIRECTORY_BLK))  //blk_addr> FAT_DIRECTORY_BLK  ///////////////////////////////////////////////////////////
       {	
-				if (blk_addr >= FAT_FILE_DATA_BLK) {
-					stat = Write_LL(wr_data_adr + FAT_OFFSET, buf, blk_len * STORAGE_BLK_SIZ);
-				  wr_data_adr += blk_len * STORAGE_BLK_SIZ;
+				if (blk_addr >= fat_file_data_blk) {
+//					USBD_UsrLog("  WR_LL wr_data_adr-> 0x%X", wr_data_adr);
+//					stat = Write_LL(wr_data_adr + FAT_OFFSET, buf, blk_len * STORAGE_BLK_SIZ);
+					USBD_UsrLog("  WR_LL wr_data_adr_-> 0x%X", (blk_addr-fat_file_data_blk)* STORAGE_BLK_SIZ);
+					stat = Write_LL((adr) + blk_addr * STORAGE_BLK_SIZ, buf, blk_len * STORAGE_BLK_SIZ);
+					wr_data_adr += blk_len * STORAGE_BLK_SIZ;
 				}
 				else {
          stat = Write_LL((adr) + blk_addr * STORAGE_BLK_SIZ, buf, blk_len * STORAGE_BLK_SIZ);
@@ -556,6 +614,7 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
       if (file_size > 0)
       {
 					if (wr_data_adr == (file_size / STORAGE_BLK_SIZ + mod)*STORAGE_BLK_SIZ ) { //==
+				  //if (blk_addr == (fat_file_data_blk-1) + mod + file_size/STORAGE_BLK_SIZ){       //If the file is recorded fully
 						    USBD_UsrLog("\n\r wr_data_adr 0x%X file_size -> 0x%X", wr_data_adr, file_size);
 								if (fat_directory_blk_written) {
 									USBD_UsrLog("\n\r Complet for windows");
@@ -563,6 +622,7 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
 									complet = 1;
 									fat_directory_blk_written = false;
 									wr_data_adr = 0;
+							    file_data_blk_changed = false;
 						 }
 					}
       }
