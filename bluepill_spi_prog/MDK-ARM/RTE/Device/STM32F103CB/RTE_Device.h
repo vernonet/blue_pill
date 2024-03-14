@@ -64,13 +64,19 @@
 #ifndef DRIVER_SPI_BUS_SPEED
 //   <h> SPI_BUS_SPEED
 //   <o> Hz <18000000=>18000000 <9000000=>9000000 <4500000=>4500000 <2150000=>2150000
-#define DRIVER_SPI_BUS_SPEED             9000000
+#define DRIVER_SPI_BUS_SPEED             18000000
 //   </h>
 #endif
 
 #ifndef USE_LFN
 //   <c> Long file names support
 #define USE_LFN        
+//   </c>
+#endif
+
+#ifndef SIMPLY_FLS_BASE
+//   <c> Simply flash base
+#define SIMPLY_FLS_BASE        
 //   </c>
 #endif
 

@@ -69,8 +69,6 @@ uint8_t status, st;
 __IO uint32_t CRCValue_actual = 0;  // calculated after write flash
 __IO uint32_t CRCValue_actual_2 = 0;  // calculated during write flash
 __IO uint32_t CRCValue_nominal = 0; // calculated before write flash
-// uint8_t crc_buf[0x200] __attribute__((aligned(4)));
-uint8_t *crc_buf;
 extern uint8_t Wr_Protect;
 volatile uint8_t complet = 0, error = 0, error_sts = 0;
 extern int32_t file_size;
@@ -456,19 +454,6 @@ bool process_complete(Media_mode mde)
 			HAL_Delay(2000);
       if ((file_size > STORAGE_BLK_SIZ) && (file_size <= (flschip->total_size * 1024)))
       {
-//        volatile uint32_t adr = 0, len = 0;
-//				crc_buf = malloc(CRC_BUFF_SZE);
-//        while (adr < file_size)
-//        {
-//          if (file_size - adr > (sizeof(crc_buf[0]) * CRC_BUFF_SZE))
-//            len = sizeof(crc_buf[0]) * CRC_BUFF_SZE;
-//          else
-//            len = file_size - adr;
-//          ReadData(adr, (uint32_t *)crc_buf, len); // sizeof(crc_buf)
-//          CRCValue_actual = CalcCRC32(crc_buf, len, CRCValue_actual);
-//          adr += len;
-//        }
-//        free(crc_buf);
         if ((error_sts) || !(CRCValue_nominal == CRCValue_actual_2) || (error))
         {
           // error CRC or any other error

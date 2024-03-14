@@ -8,6 +8,7 @@
  */
  
  #include <stdint.h>
+ #include "RTE_Device.h"
 
  /*
  * How many different contiguous runs of erase blocks with one size each do
