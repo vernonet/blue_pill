@@ -635,17 +635,24 @@ transfer_error:
   \param[in]   cnt   Number of data items to program.
   \return      number of data items vefrified or \ref execution_status
 */
-int32_t VerifyData (uint32_t addr, const void *data, uint32_t cnt, bool blink) {
+mem_cmp_res VerifyData (uint32_t addr, const void *data, uint32_t cnt, bool blink) {
 
-	 //int32_t  status;	 
+	 mem_cmp_res  status;	
+	 uint8_t * buf;
+	
 	 
   if (blink) {
 	  if ((addr & 0x1fff)  == 0) LED_Toggle();                //indicate verify
   }
 	 
 	 SPI_UsrLog ("\n verf_addr -> 0x%05x   cnt -> 0x%03x", addr, cnt);
+	 buf = malloc(cnt);
+	 ReadData(addr, (uint32_t *)buf, cnt, false);	
+	 status = memcmp_adr ( (const void *)buf,  data, cnt);
+	 status.addr += addr;
+	 free(buf);
 		
-   return (cnt);
+   return (status);
 }
 
 
@@ -1298,6 +1305,26 @@ static int32_t EraseSector (uint32_t addr) {
 //	}
 //	return 0;
 //}
+
+//0 - OK, or return address
+mem_cmp_res memcmp_adr (const void *str1, const void *str2, size_t count)
+{
+	mem_cmp_res res = {0};
+  const unsigned char *s1 = (const unsigned char*)str1;
+  const unsigned char *s2 = (const unsigned char*)str2;
+
+  while (count-- > 0)
+    {
+      if (*s1 != *s2) {
+				res.addr = (uint32_t)s1 - (uint32_t)str1;
+				res.needed = *s2;
+				res.real = *s1;
+				return res;
+			}
+			s1++; s2++;
+    }
+  return res;
+}	 
 
 static int32_t isErased (void) {
   uint32_t buf[0x40], buf_[0x40];

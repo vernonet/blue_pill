@@ -69,6 +69,7 @@ uint8_t status, st;
 __IO uint32_t CRCValue_actual = 0;  // calculated after write flash
 __IO uint32_t CRCValue_actual_2 = 0;  // calculated during write flash
 __IO uint32_t CRCValue_nominal = 0; // calculated before write flash
+mem_cmp_res verify_stat;
 extern uint8_t Wr_Protect;
 volatile uint8_t complet = 0, error = 0, error_sts = 0;
 extern int32_t file_size;
@@ -436,6 +437,7 @@ bool prepare_device(Media_mode mde)
 bool process_complete(Media_mode mde)
 {
   int8_t sts = 0;
+	char str_buf[100];
 
   CRCValue_actual = 0;
   CRCValue_nominal = 0;
@@ -454,20 +456,21 @@ bool process_complete(Media_mode mde)
 			HAL_Delay(2000);
       if ((file_size > STORAGE_BLK_SIZ) && (file_size <= (flschip->total_size * 1024)))
       {
-        if ((error_sts) || !(CRCValue_nominal == CRCValue_actual_2) || (error))
+        if ((error_sts) || !(CRCValue_nominal == CRCValue_actual_2) || (error) || (verify_stat.needed != verify_stat.real))
         {
           // error CRC or any other error
           device_mode = INFO;
 					USBD_UsrLog("\n\r device_mode -> %s", getModeName(device_mode));
           if (error_sts)
             sts = Prepare_FAT(flschip->total_size, "Error during programming", "ERROR ");
-          else if (!(CRCValue_nominal == CRCValue_actual_2))
+          else if (!(CRCValue_nominal == CRCValue_actual_2) && (mde == PROG))
           {
-            if (mde == VERIFY)
-              sts = Prepare_FAT(flschip->total_size, "CRC error after verifing", "ERROR ");
-            else
-              sts = Prepare_FAT(flschip->total_size, "CRC error after programming", "ERROR ");
+             sts = Prepare_FAT(flschip->total_size, "CRC error after programming", "ERROR ");
           }
+					else if ((verify_stat.needed != verify_stat.real) && (mde == VERIFY)) {
+						 sprintf((char *)&str_buf[0], "Verification failed addr. 0x%X N_0x%X R_0x%X", verify_stat.addr, verify_stat.needed, verify_stat.real);
+						 sts = Prepare_FAT(flschip->total_size, &str_buf[0], "ERROR ");
+					}
           else
             sts = Prepare_FAT(flschip->total_size,"Error during programming-verifing", "ERROR ");
           if (sts)

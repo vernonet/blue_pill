@@ -88,6 +88,7 @@ extern uint8_t complet, error, error_sts;
 extern uint8_t inter;
 volatile uint32_t ttt = 0;
 extern __IO uint32_t CRCValue_nominal, CRCValue_actual_2;
+extern mem_cmp_res verify_stat;
 Media_mode device_mode;
 extern uint32_t spi_speed;
 ARM_SPI_STATUS sts;
@@ -125,6 +126,7 @@ bool fat_directory_blk_written = false;
 volatile uint32_t wr_data_adr = 0;
 uint32_t fat_file_data_blk = 0, fat_offset = 0;
 bool file_data_blk_changed = false;
+bool crc_error = false, verify_error = false;
 
 USBD_StorageTypeDef USBD_DISK_fops = {
     STORAGE_Init,
@@ -398,6 +400,9 @@ int8_t Prepare_FAT(uint32_t size_in_kb, const char *fil_str, const char *dsk_lbl
   FAT_BOOTSECTOR * boot_sct;	
 	uint32_t sec_count;
 	
+	crc_error = false;
+	verify_error = false;
+	memset (&verify_stat, 0, sizeof verify_stat);
 	file_size = 0;
 	wr_data_adr = 0;
 	fat_file_data_blk = FAT_FILE_DATA_BLK;
@@ -451,6 +456,7 @@ int8_t Prepare_FAT(uint32_t size_in_kb, const char *fil_str, const char *dsk_lbl
 static int8_t Write_LL(Dst_data dst_dta, uint32_t dest, uint8_t *src, uint16_t len)
 {
   int8_t stat;
+	mem_cmp_res ver_stat;
   uint32_t *src32 = (uint32_t *)src;
   uint8_t *crc_buf_;
 
@@ -472,33 +478,36 @@ static int8_t Write_LL(Dst_data dst_dta, uint32_t dest, uint8_t *src, uint16_t l
       }
       else if (device_mode == VERIFY)
       {
-        stat = (int8_t)VerifyData(dest - fat_offset, src32, len, false);
-        if (stat != ARM_DRIVER_OK)
-          return stat;
-        crc_buf_ = malloc(len);
         if ((modulo) && ((dest - fat_offset) == ((file_size / STORAGE_BLK_SIZ) * STORAGE_BLK_SIZ)))
         {
           len = modulo;
-          // USBD_UsrLog("\n\r len = modulo");
         }
-        ReadData(dest - fat_offset, (uint32_t *)crc_buf_, len, true); // sizeof(crc_buf)
-        CRCValue_actual_2 = CalcCRC32_n(crc_buf_, len, CRCValue_actual_2, CRC_BUFF_SZE);
-        free(crc_buf_);
-      }
+				
+				if (!verify_error) {
+					ver_stat = VerifyData(dest - fat_offset, src32, len, true);
+					if (ver_stat.needed != ver_stat.real) {
+					  verify_error = true;
+						verify_stat = ver_stat;
+					}
+        }
+		  }
       else if (device_mode == PROG)
       {
         stat = (int8_t)ProgramData(dest - fat_offset, src32, len, false);
         if (stat != ARM_DRIVER_OK)
           return stat;
-        crc_buf_ = malloc(len);
         if ((modulo) && ((dest - fat_offset) == ((file_size / STORAGE_BLK_SIZ) * STORAGE_BLK_SIZ)))
         {
           len = modulo;
-          // USBD_UsrLog("\n\r len = modulo");
         }
-        ReadData(dest - fat_offset, (uint32_t *)crc_buf_, len, true); // sizeof(crc_buf)
-        CRCValue_actual_2 = CalcCRC32_n(crc_buf_, len, CRCValue_actual_2, CRC_BUFF_SZE);
-        free(crc_buf_);
+				if (!crc_error) {
+					crc_buf_ = malloc(len);
+					ReadData(dest - fat_offset, (uint32_t *)crc_buf_, len, true); // sizeof(crc_buf)
+					CRCValue_actual_2 = CalcCRC32_n(crc_buf_, len, CRCValue_actual_2, CRC_BUFF_SZE);
+					if (CRCValue_actual_2 != CRCValue_nominal)
+						crc_error = true;
+					free(crc_buf_);
+			 }
       }
       else
         return -1; // unknown mode
@@ -570,11 +579,11 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
         if ((modulo) && (blk_addr == (fat_file_data_blk + file_size / STORAGE_BLK_SIZ)))
         {
           // last block && not aligned
-          CRCValue_nominal = CalcCRC32_n(buf, modulo, CRCValue_nominal, CRC_BUFF_SZE);
+          if (device_mode == PROG) CRCValue_nominal = CalcCRC32_n(buf, modulo, CRCValue_nominal, CRC_BUFF_SZE);
         }
         // standart
         else
-          CRCValue_nominal = CalcCRC32_n(buf, blk_len * STORAGE_BLK_SIZ, CRCValue_nominal, CRC_BUFF_SZE);
+          if (device_mode == PROG) CRCValue_nominal = CalcCRC32_n(buf, blk_len * STORAGE_BLK_SIZ, CRCValue_nominal, CRC_BUFF_SZE);
       }
       if (blk_addr < fat_file_data_blk)
       {
@@ -713,12 +722,12 @@ uint32_t find_file_size(uint8_t * ptr){
 }
 
 
+//ptr - pointer to VolumeID entry (FAT_DIRECTORY_BLK)
 int8_t set_file_size(uint8_t * ptr, uint32_t sze){
 	
 	FAT_LONGENTRY * long_entry;
 	FAT_SHORTENTRY * short_entry;
-	uint32_t fls_sze;
-
+	
 #ifdef USE_LFN	
 	long_entry = (FAT_LONGENTRY *) (ptr + 0x20);
 	if (!long_entry->LFN.char0) {

@@ -45,10 +45,15 @@ typedef struct _JEDEC_ID {
   uint16_t dev_id; 
 } JEDEC_ID;
 
+typedef struct {
+	  unsigned int  addr;
+	  unsigned char needed;
+	  unsigned char real;
+             } mem_cmp_res;
 
 int32_t ReadData (uint32_t addr, void *data, uint32_t cnt, bool blink);
 int32_t ProgramData (uint32_t addr, const void *data, uint32_t cnt, bool blink);
-int32_t VerifyData (uint32_t addr, const void *data, uint32_t cnt, bool blink);
+mem_cmp_res VerifyData (uint32_t addr, const void *data, uint32_t cnt, bool blink);
 int32_t ReadSfdpReg (uint8_t cmd, uint32_t* _size);
 int32_t ReadJedecId (uint8_t cmd, JEDEC_ID* jdc_id);
 int32_t ReadIdSST ( uint8_t cmd, JEDEC_ID* jdc_id);
@@ -71,4 +76,5 @@ int32_t spi_erase_bulk_sec    (uint8_t cmd);
 int32_t spi_read_at45db       (uint32_t addr, void *data, uint32_t cnt);
 int32_t spi_write_at45db      (uint32_t addr, const void *data, uint32_t cnt);
 int32_t spi_erase_bulk_at45   (uint8_t cmd);
+mem_cmp_res memcmp_adr        (const void *str1, const void *str2, size_t count);
 
