@@ -30,11 +30,11 @@ Pins are used to connect the chip to the board:
 ![Schematic diagram](https://github.com/vernonet/blue_pill/edit/master/bluepill_spi_prog/schematic_diagram.jpg)
 
 
-To display debug information set in file "usbd_conf.h" (debugging is output to the SWO port) :
+To display debug information set in file "usbd_conf.h" (debugging is output to the SWO port, pin B3) :
  - USBD_DEBUG_LEVEL             1
  - SPI_DEBUG_LEVEL              1
  
- In Linux not working (works unstable in Linux), working in WinXP - Win11.
+ Working in WinXP - Win11, Linux (Ubuntu).
  Problems with Windows 10 - windows 10 creates a folder on the disk - "System Volume Information". To fix this:
    
    Step 1:
