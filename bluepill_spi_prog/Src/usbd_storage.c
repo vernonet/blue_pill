@@ -74,14 +74,11 @@ int8_t STORAGE_Read(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
 int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
                      uint16_t blk_len);
 int8_t STORAGE_GetMaxLun(void);
-// static uint32_t GetSector(uint32_t Address);
-// static uint32_t GetSectorSize(uint32_t Sector);
 static int8_t Write_LL(Dst_data dst_dta, uint32_t dest, uint8_t *buf, uint16_t len);
 int8_t Sector_Erase(void);
 
 
 uint32_t  modulo = 0;
-/*Variable used for Erase procedure*/
 uint8_t flash_eraset = 0, temp = 0, Wr_Protect, mod = 0;
 uint16_t block_num_cnt = 0;
 extern uint8_t complet, error, error_sts;
@@ -400,6 +397,8 @@ int8_t Prepare_FAT(uint32_t size_in_kb, const char *fil_str, const char *dsk_lbl
   FAT_BOOTSECTOR * boot_sct;	
 	uint32_t sec_count;
 	
+	fat_directory_blk_written = false;
+	file_data_blk_changed = false;
 	crc_error = false;
 	verify_error = false;
 	memset (&verify_stat, 0, sizeof verify_stat);
@@ -483,7 +482,7 @@ static int8_t Write_LL(Dst_data dst_dta, uint32_t dest, uint8_t *src, uint16_t l
           len = modulo;
         }
 				
-				if (!verify_error) {
+				if (!verify_error) { //if there was an error, we skip it
 					ver_stat = VerifyData(dest - fat_offset, src32, len, true);
 					if (ver_stat.needed != ver_stat.real) {
 					  verify_error = true;
@@ -500,9 +499,9 @@ static int8_t Write_LL(Dst_data dst_dta, uint32_t dest, uint8_t *src, uint16_t l
         {
           len = modulo;
         }
-				if (!crc_error) {
+				if (!crc_error) { //if there was an error, we skip it
 					crc_buf_ = malloc(len);
-					ReadData(dest - fat_offset, (uint32_t *)crc_buf_, len, true); // sizeof(crc_buf)
+					ReadData(dest - fat_offset, (uint32_t *)crc_buf_, len, true);
 					CRCValue_actual_2 = CalcCRC32_n(crc_buf_, len, CRCValue_actual_2, CRC_BUFF_SZE);
 					if (CRCValue_actual_2 != CRCValue_nominal)
 						crc_error = true;
@@ -623,9 +622,9 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
 								USBD_UsrLog("\n\r Complet for linux");
 								Wr_Protect = 1;
 							  complet = 1;
-								fat_directory_blk_written = false;
-								wr_data_adr = 0;
-								file_data_blk_changed = false;
+//								fat_directory_blk_written = false;
+//								wr_data_adr = 0;
+//								file_data_blk_changed = false;
 							}
             }
           }
@@ -658,7 +657,7 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
       }
 
       if (file_size > 0)
-      {
+      {   //If the file is recorded fully
 					if (wr_data_adr == (file_size / STORAGE_BLK_SIZ + mod)*STORAGE_BLK_SIZ ) { //==
 				  //if (blk_addr == (fat_file_data_blk-1) + mod + file_size/STORAGE_BLK_SIZ){       //If the file is recorded fully
 						    USBD_UsrLog("\n\r wr_data_adr 0x%X file_size -> 0x%X", wr_data_adr, file_size);
@@ -666,9 +665,9 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
 									USBD_UsrLog("\n\r Complet for windows");
 									Wr_Protect = 1;
 									complet = 1;
-									fat_directory_blk_written = false;
-									wr_data_adr = 0;
-							    file_data_blk_changed = false;
+//									fat_directory_blk_written = false;
+//									wr_data_adr = 0;
+//							    file_data_blk_changed = false;
 						 }
 					}
       }
@@ -694,6 +693,7 @@ int8_t STORAGE_GetMaxLun(void)
   return (STORAGE_LUN_NBR - 1);
 }
 
+//ptr - pointer to VolumeID entry (FAT_DIRECTORY_BLK)
 uint32_t find_file_size(uint8_t * ptr){
 	
 	FAT_LONGENTRY * long_entry;
