@@ -8621,6 +8621,48 @@ const struct  flashchip  flashchips[]  =  {
 
 	{
 		.vendor		= "Winbond",
+		.name		= "W25Q20.W",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= WINBOND_NEX_ID,
+		.model_id	= WINBOND_NEX_W25Q20_W,
+		.total_size	= 256,
+		.page_size	= 256,
+		/* OTP: 256B total; read 0x48; write 0x42, erase 0x44, read ID 0x4B */
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+//		.tested		= TEST_UNTESTED,
+//		.probe		= PROBE_SPI_RDID,
+//		.probe_timing	= TIMING_ZERO,
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE				
+				.eraseblocks = { {4 * 1024, 64} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {32 * 1024, 8} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+				.eraseblocks = { {64 * 1024, 4} },
+				.block_erase = SPI_BLOCK_ERASE_D8,
+			}, {
+				.eraseblocks = { {256 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			}, {
+#endif				
+				.eraseblocks = { {256 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_C7,
+			}
+		},
+//		.printlock	= SPI_PRETTYPRINT_STATUS_REGISTER_PLAIN, /* TODO: improve */
+		.unlock		= spi_disable_blockprotect,
+		.write		= spi_chip_write_256,
+		.read		= spi_chip_read,
+		.erase    = spi_erase_bulk,
+		.voltage	= {1700, 1950}, /* Fast read (0x0B) and multi I/O supported */
+	},
+
+	{
+		.vendor		= "Winbond",
 		.name		= "W25Q40EW",
 		.bustype	= BUS_SPI,
 		.manufacture_id	= WINBOND_NEX_ID,
