@@ -4337,6 +4337,91 @@ const struct  flashchip  flashchips[]  =  {
 	},
 
 {
+		.vendor		= "GigaDevice",
+		.name		= "GD25LQ64(B)",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= GIGADEVICE_ID,
+		.model_id	= GIGADEVICE_GD25LQ64,
+		.total_size	= 8192,
+		.page_size	= 256,
+		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42, erase 0x44 */
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EXT2,
+//		.tested		= TEST_OK_PREWB,
+//		.probe		= PROBE_SPI_RDID,
+//		.probe_timing	= TIMING_ZERO,
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE						
+				.eraseblocks = { {4 * 1024, 2048} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {32 * 1024, 256} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+				.eraseblocks = { {64 * 1024, 128} },
+				.block_erase = SPI_BLOCK_ERASE_D8,
+			}, {
+				.eraseblocks = { {8 * 1024 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			}, {
+#endif					
+				.eraseblocks = { {8 * 1024 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_C7,
+			}
+		},
+//		.printlock	= SPI_PRETTYPRINT_STATUS_REGISTER_BP4_SRWD,
+	  .unlock		= spi_disable_blockprotect_bp4_srwd, /* TODO: 2nd status reg (read with 0x35) */
+		.write		= spi_chip_write_256,
+		.read		= spi_chip_read, /* Fast read (0x0B) and multi I/O supported */
+		.erase    = spi_erase_bulk,
+		.voltage	= {1695, 1950},
+	},
+
+
+{
+		.vendor		= "GigaDevice",
+		.name		= "GD25LQ128E/GD25LB128E/GD25LR128E/GD25LQ128D/GD25LQ128C",
+		.bustype	= BUS_SPI,
+		.manufacture_id	= GIGADEVICE_ID,
+		.model_id	= GIGADEVICE_GD25LQ128CD,
+		.total_size	= 16384,
+		.page_size	= 256,
+		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42, erase 0x44 */
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EXT2,
+//		.tested		= TEST_OK_PREWB,
+//		.probe		= PROBE_SPI_RDID,
+//		.probe_timing	= TIMING_ZERO,
+		.block_erasers	=
+		{
+			{
+#ifndef SIMPLY_FLS_BASE						
+				.eraseblocks = { {4 * 1024, 4096} },
+				.block_erase = SPI_BLOCK_ERASE_20,
+			}, {
+				.eraseblocks = { {32 * 1024, 512} },
+				.block_erase = SPI_BLOCK_ERASE_52,
+			}, {
+				.eraseblocks = { {64 * 1024, 256} },
+				.block_erase = SPI_BLOCK_ERASE_D8,
+			}, {
+				.eraseblocks = { {16 * 1024 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_60,
+			}, {
+#endif				
+				.eraseblocks = { {16 * 1024 * 1024, 1} },
+				.block_erase = SPI_BLOCK_ERASE_C7,
+			}
+		},
+//		.printlock	= SPI_PRETTYPRINT_STATUS_REGISTER_BP4_SRWD,
+		.unlock		= spi_disable_blockprotect_bp4_srwd, /* TODO: 2nd status reg (read with 0x35) */
+		.write		= spi_chip_write_256,
+		.read		= spi_chip_read, /* Fast read (0x0B) and multi I/O supported */
+		.erase    = spi_erase_bulk,
+		.voltage	= {1695, 1950},
+	},
+
+{
 		.vendor		= "Macronix",
 		.name		= "MX25L25645G",
 		.bustype	= BUS_SPI,

@@ -305,17 +305,19 @@
 #define FUDAN_FM25Q32		0x4016
 
 
-#define GIGADEVICE_ID		0xC8	/* GigaDevice */
-#define GIGADEVICE_GD25Q512	0x4010
-#define GIGADEVICE_GD25Q10	0x4011
-#define GIGADEVICE_GD25Q20	0x4012	/* Same as GD25QB */
-#define GIGADEVICE_GD25Q40	0x4013	/* Same as GD25QB */
-#define GIGADEVICE_GD25Q80	0x4014	/* Same as GD25Q80B (which has OTP) */
-#define GIGADEVICE_GD25Q16	0x4015	/* Same as GD25Q16B (which has OTP) */
-#define GIGADEVICE_GD25Q32	0x4016	/* Same as GD25Q32B */
-#define GIGADEVICE_GD25Q64	0x4017	/* Same as GD25Q64B */
-#define GIGADEVICE_GD25Q128	0x4018	/* GD25Q128B and GD25Q128C only, can be distinguished by SFDP */
-#define GIGADEVICE_GD25Q256D	0x4019
+#define GIGADEVICE_ID		        0xC8	/* GigaDevice */
+#define GIGADEVICE_GD25Q512	    0x4010
+#define GIGADEVICE_GD25Q10	    0x4011
+#define GIGADEVICE_GD25Q20	    0x4012	/* Same as GD25QB */
+#define GIGADEVICE_GD25Q40	    0x4013	/* Same as GD25QB */
+#define GIGADEVICE_GD25Q80	    0x4014	/* Same as GD25Q80B (which has OTP) */
+#define GIGADEVICE_GD25Q16	    0x4015	/* Same as GD25Q16B (which has OTP) */
+#define GIGADEVICE_GD25Q32	    0x4016	/* Same as GD25Q32B */
+#define GIGADEVICE_GD25Q64	    0x4017	/* Same as GD25Q64B */
+#define GIGADEVICE_GD25Q128	    0x4018	/* GD25Q128B and GD25Q128C only, can be distinguished by SFDP */
+#define GIGADEVICE_GD25Q256D	  0x4019
+#define GIGADEVICE_GD25LQ64	    0x6017	/* Same as GD25LQ64B (which is faster) */
+#define GIGADEVICE_GD25LQ128CD  0x6018
 
 
 #define MACRONIX_ID		0xC2	/* Macronix (MX) */
