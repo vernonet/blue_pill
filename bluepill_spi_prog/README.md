@@ -54,6 +54,7 @@ To display debug information set in file "usbd_conf.h" (debugging is output to t
    Step 3:
      In addition, disable or stop the service - StorSvc (Service storage or  Служба хранилища), and disable "Autoplay".
 
+To connect chips with a supply voltage of 1.8V, you can use such an <a href="https://www.aliexpress.com/item/1005002895111672.html" rel="nofollow">adapter</a> or take a risk and use it without an adapter.
 
   
 # License
